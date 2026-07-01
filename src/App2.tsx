@@ -1,8 +1,3 @@
-
-import { startRecording, stopRecording, generateTest, generateRunbook } from "./api/trailwise";
-import { deleteSession } from "./api/trailwise";
-import ProjectsBar from "./component/ProjectsBar"
-import ProjectDelete from "./component/ProjectDelete";
 import { useEffect, useRef, useState } from "react";
 import {
   Activity,
@@ -141,299 +136,204 @@ function formatDuration(totalSeconds: number) {
 }
 
 export default function App() {
-  const [url, setUrl] = useState("http://localhost:5173");
-  const [message, setMessage] = useState("");
-  const [projectName, setProjectName] = useState("CREATE YOUR PROJECT");
-  const [currentSession, setCurrentSession] = useState(null);
-  const [sessions, setSessions] = useState([]);
+  const [activePanel, setActivePanel] = useState<Panel>("overview");
+  const [selectedRecordingId, setSelectedRecordingId] = useState("expense");
+  const [selectedStep, setSelectedStep] = useState(4);
+  const [recordingPhase, setRecordingPhase] = useState<RecordingPhase>("ready");
+  const [durationSeconds, setDurationSeconds] = useState(recordingSeed[0].duration);
+  const [actionsCaptured, setActionsCaptured] = useState(recordingSeed[0].actions);
+  const [loadingAction, setLoadingAction] = useState<LoadingAction>(null);
+  const [generatedArtifacts, setGeneratedArtifacts] = useState({ test: false, runbook: false });
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [targetUrl, setTargetUrl] = useState("http://localhost:5173");
+  const summaryRef = useRef<HTMLElement>(null);
+  const timelineRef = useRef<HTMLElement>(null);
+  const runbookRef = useRef<HTMLElement>(null);
 
-    const [activePanel, setActivePanel] = useState<Panel>("overview");
-    const [selectedRecordingId, setSelectedRecordingId] = useState("expense");
-    const [selectedStep, setSelectedStep] = useState(4);
-    const [recordingPhase, setRecordingPhase] = useState<RecordingPhase>("ready");
-    const [durationSeconds, setDurationSeconds] = useState(recordingSeed[0].duration);
-    const [actionsCaptured, setActionsCaptured] = useState(recordingSeed[0].actions);
-    const [loadingAction, setLoadingAction] = useState<LoadingAction>(null);
-    const [generatedArtifacts, setGeneratedArtifacts] = useState({ test: false, runbook: false });
-    const [toasts, setToasts] = useState<Toast[]>([]);
-    const [copied, setCopied] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [targetUrl, setTargetUrl] = useState("http://localhost:5173");
-    const summaryRef = useRef<HTMLElement>(null);
-    const timelineRef = useRef<HTMLElement>(null);
-    const runbookRef = useRef<HTMLElement>(null);
-  
-    const selectedRecording =
-      recordingSeed.find((recording) => recording.id === selectedRecordingId) ?? recordingSeed[0];
-    const selectedEvent = traceEvents.find((event) => event.step === selectedStep) ?? traceEvents[3];
-    const isRecording = recordingPhase === "recording";
-    const isCompleted = recordingPhase === "completed";
-    const statusLabel =
-      recordingPhase === "recording" ? "Recording" : recordingPhase === "completed" ? "Completed" : "Ready";
-    const hasGeneratedArtifact = generatedArtifacts.test || generatedArtifacts.runbook;
-    const workflowStage: WorkflowStage = isRecording
-      ? "record"
-      : hasGeneratedArtifact
-        ? "generate"
-        : isCompleted
-          ? "review"
-          : "prepare";
-    const stageCopy: Record<WorkflowStage, { eyebrow: string; title: string; body: string; status: string }> = {
-      prepare: {
-        eyebrow: "Step 1 / Prepare",
-        title: "Prepare Chrome workflow recording.",
-        body: "Confirm the local helper, target URL, and handoff status before the browser capture begins.",
-        status: "Ready for local confirmation",
-      },
-      record: {
-        eyebrow: "Step 2 / Record",
-        title: "Recording browser workflow.",
-        body: "Capture the user path with a running duration, event count, and live trace updates.",
-        status: "Recording in progress",
-      },
-      review: {
-        eyebrow: "Step 3 / Review",
-        title: "Review captured trace.",
-        body: "Inspect the selected event and verify the structured trace before generating outputs.",
-        status: "Trace ready for outputs",
-      },
-      generate: {
-        eyebrow: "Step 4 / Generate",
-        title: "Generate reusable artifacts.",
-        body: "Create Test Case or Runbook outputs from the verified recording and keep them attached to the run.",
-        status: "Output workspace ready",
-      },
-    };
-    const workflowSteps: Array<{ id: WorkflowStage; label: string; detail: string }> = [
-      { id: "prepare", label: "Prepare", detail: "helper and target" },
-      { id: "record", label: "Record", detail: "capture actions" },
-      { id: "review", label: "Review", detail: "inspect trace" },
-      { id: "generate", label: "Generate", detail: "create outputs" },
-    ];
-    const workflowStageIndex = workflowSteps.findIndex((step) => step.id === workflowStage);
-  
-    useEffect(() => {
-      if (!isRecording) return undefined;
-  
-      const intervalId = window.setInterval(() => {
-        setDurationSeconds((current) => current + 1);
-        setActionsCaptured((current) => Math.min(current + 1, 99));
-      }, 1000);
-  
-      return () => window.clearInterval(intervalId);
-    }, [isRecording]);
-  
-    const showToast = (message: string, tone: Toast["tone"] = "default") => {
-      const id = Date.now();
-      setToasts((current) => [...current, { id, message, tone }]);
-      window.setTimeout(() => {
-        setToasts((current) => current.filter((toast) => toast.id !== id));
-      }, tone === "error" ? 3200 : 1800);
-    };
-  
-    const jumpTo = (panel: Panel) => {
-      const target = {
-        overview: summaryRef,
-        trace: timelineRef,
-        runbook: runbookRef,
-      }[panel];
-  
-      setActivePanel(panel);
-      window.setTimeout(() => target.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-    };
-  
-    const selectRecording = (recordingId: string) => {
-      const recording = recordingSeed.find((item) => item.id === recordingId) ?? recordingSeed[0];
-      setSelectedRecordingId(recording.id);
-      setSelectedStep(4);
-      setRecordingPhase(recording.tone === "green" ? "completed" : "ready");
-      setDurationSeconds(recording.duration);
-      setActionsCaptured(recording.actions);
-      setGeneratedArtifacts({ test: false, runbook: false });
-      setSidebarOpen(false);
-      jumpTo("overview");
-      showToast(`${recording.title} selected`);
-    };
-  
-  
-    const stopRecording = () => {
-      if (!isRecording) return;
-      setRecordingPhase("completed");
-      setSelectedStep(4);
-      jumpTo("overview");
-      showToast("Recording completed");
-    };
-  
-    const checkStatus = () => {
-      showToast(`${statusLabel}: ${formatDuration(durationSeconds)} / ${actionsCaptured} actions captured`);
-    };
-  
-    const openWorkspace = () => {
-      setSidebarOpen(false);
-      jumpTo("overview");
-    };
-  
-    const openSidebar = () => {
-      setSidebarOpen(true);
-      showToast("Workspace sidebar opened");
-    };
-  
-    const openSettings = () => {
-      showToast("Settings are not connected in this prototype");
-    };
-  
-    const generateArtifact = (kind: Exclude<LoadingAction, null>) => {
-      if (!isCompleted || loadingAction) return;
-  
-      setLoadingAction(kind);
-      window.setTimeout(() => {
-        setGeneratedArtifacts((current) => ({ ...current, [kind]: true }));
-        setLoadingAction(null);
-        showToast(kind === "test" ? "Test Case generated successfully" : "Runbook generated successfully");
-        if (kind === "runbook") jumpTo("runbook");
-      }, 900);
-    };
-  
-    const copyRunbook = async () => {
-      try {
-        await navigator.clipboard.writeText(runbookText);
-      } catch {
-        // The visual acknowledgement still helps when clipboard access is blocked.
-      }
-  
-      setCopied(true);
-      showToast("Runbook copied");
-      window.setTimeout(() => setCopied(false), 1200);
-    };
-  
-    const visibleEventState = (event: (typeof traceEvents)[number]) => {
-      if (selectedStep === event.step) return "Selected";
-      if (isRecording && event.step > Math.max(1, Math.min(actionsCaptured, 6))) return "Pending";
-      if (isCompleted && event.step <= 6) return "Done";
-      return event.state;
-    };
-  
-    const visibleEventClass = (event: (typeof traceEvents)[number]) => {
-      if (selectedStep === event.step) return "";
-      if (visibleEventState(event) === "Done") return "done";
-      if (visibleEventState(event) === "Pending") return "pending";
-      return event.stateClass;
-    };
+  const selectedRecording =
+    recordingSeed.find((recording) => recording.id === selectedRecordingId) ?? recordingSeed[0];
+  const selectedEvent = traceEvents.find((event) => event.step === selectedStep) ?? traceEvents[3];
+  const isRecording = recordingPhase === "recording";
+  const isCompleted = recordingPhase === "completed";
+  const statusLabel =
+    recordingPhase === "recording" ? "Recording" : recordingPhase === "completed" ? "Completed" : "Ready";
+  const hasGeneratedArtifact = generatedArtifacts.test || generatedArtifacts.runbook;
+  const workflowStage: WorkflowStage = isRecording
+    ? "record"
+    : hasGeneratedArtifact
+      ? "generate"
+      : isCompleted
+        ? "review"
+        : "prepare";
+  const stageCopy: Record<WorkflowStage, { eyebrow: string; title: string; body: string; status: string }> = {
+    prepare: {
+      eyebrow: "Step 1 / Prepare",
+      title: "Prepare Chrome workflow recording.",
+      body: "Confirm the local helper, target URL, and handoff status before the browser capture begins.",
+      status: "Ready for local confirmation",
+    },
+    record: {
+      eyebrow: "Step 2 / Record",
+      title: "Recording browser workflow.",
+      body: "Capture the user path with a running duration, event count, and live trace updates.",
+      status: "Recording in progress",
+    },
+    review: {
+      eyebrow: "Step 3 / Review",
+      title: "Review captured trace.",
+      body: "Inspect the selected event and verify the structured trace before generating outputs.",
+      status: "Trace ready for outputs",
+    },
+    generate: {
+      eyebrow: "Step 4 / Generate",
+      title: "Generate reusable artifacts.",
+      body: "Create Test Case or Runbook outputs from the verified recording and keep them attached to the run.",
+      status: "Output workspace ready",
+    },
+  };
+  const workflowSteps: Array<{ id: WorkflowStage; label: string; detail: string }> = [
+    { id: "prepare", label: "Prepare", detail: "helper and target" },
+    { id: "record", label: "Record", detail: "capture actions" },
+    { id: "review", label: "Review", detail: "inspect trace" },
+    { id: "generate", label: "Generate", detail: "create outputs" },
+  ];
+  const workflowStageIndex = workflowSteps.findIndex((step) => step.id === workflowStage);
 
-  async function loadSessions() {
-    const res = await fetch("http://localhost:3000/dev/sessions");
-    const data = await res.json();
+  useEffect(() => {
+    if (!isRecording) return undefined;
 
-    setSessions(data.sessions.filter((s) => s.status !== "deleted"));
-  }
+    const intervalId = window.setInterval(() => {
+      setDurationSeconds((current) => current + 1);
+      setActionsCaptured((current) => Math.min(current + 1, 99));
+    }, 1000);
 
+    return () => window.clearInterval(intervalId);
+  }, [isRecording]);
 
-   const beginRecording = async () => {
+  const showToast = (message: string, tone: Toast["tone"] = "default") => {
+    const id = Date.now();
+    setToasts((current) => [...current, { id, message, tone }]);
+    window.setTimeout(() => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+    }, tone === "error" ? 3200 : 1800);
+  };
+
+  const jumpTo = (panel: Panel) => {
+    const target = {
+      overview: summaryRef,
+      trace: timelineRef,
+      runbook: runbookRef,
+    }[panel];
+
+    setActivePanel(panel);
+    window.setTimeout(() => target.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  };
+
+  const selectRecording = (recordingId: string) => {
+    const recording = recordingSeed.find((item) => item.id === recordingId) ?? recordingSeed[0];
+    setSelectedRecordingId(recording.id);
+    setSelectedStep(4);
+    setRecordingPhase(recording.tone === "green" ? "completed" : "ready");
+    setDurationSeconds(recording.duration);
+    setActionsCaptured(recording.actions);
+    setGeneratedArtifacts({ test: false, runbook: false });
+    setSidebarOpen(false);
+    jumpTo("overview");
+    showToast(`${recording.title} selected`);
+  };
+
+  const beginRecording = () => {
     if (isRecording) return;
-    try {
-          const result = await startRecording(url);
-    
-          console.log(result);
-    
-          setMessage(result.text ?? JSON.stringify(result));
-    
-          await loadSessions();
-    
-          const match = result.text?.match(/Session:\s*(\S+)/);
-          const sessionId = match?.[1];
-    
-          if (sessionId) {
-            const res = await fetch("http://localhost:3000/dev/sessions");
-            const data = await res.json();
-            const newSession = data.sessions.find(
-              (s) => s.session_id === sessionId
-            );
-    
-            setCurrentSession(newSession);
-            setProjectName(newSession.session_id);
-
-            setRecordingPhase("recording");
-            setDurationSeconds(0);
-            setActionsCaptured(0);
-            setSelectedStep(1);
-            jumpTo("overview");
-            showToast("Recording started");
-          }
-    
-          if (result.text?.[0] === "R") {
-            window.open(url, "_blank");
-          }
-        } catch (err) {
-          console.error(err);
-          setMessage("Start failed");
-        }
+    setRecordingPhase("recording");
+    setDurationSeconds(0);
+    setActionsCaptured(0);
+    setSelectedStep(1);
+    setGeneratedArtifacts({ test: false, runbook: false });
+    jumpTo("overview");
+    showToast("Recording started");
+    window.setTimeout(() => {
+      showToast("Chrome handoff error: local confirmation is still waiting on the Mac.", "error");
+    }, 350);
   };
 
-  const handleStop = async () => {
+  const stopRecording = () => {
     if (!isRecording) return;
-    try {
-        const result = await stopRecording(currentSession.session_id);
-
-        console.log(result);
-        setMessage(result.text ?? JSON.stringify(result));
-        setRecordingPhase("completed");
-        setSelectedStep(4);
-        jumpTo("trace");
-        showToast("Recording completed");
-        await loadSessions();
-      } catch (err) {
-        console.error(err);
-        setMessage("Stop failed");
-      }
+    setRecordingPhase("completed");
+    setSelectedStep(4);
+    jumpTo("overview");
+    showToast("Recording completed");
   };
 
-  async function handleDelete(session) {
-    if (!session) return;
-    handleStop();
-    await deleteSession(session.session_id);
-    await loadSessions();
+  const checkStatus = () => {
+    showToast(`${statusLabel}: ${formatDuration(durationSeconds)} / ${actionsCaptured} actions captured`);
+  };
 
-    setCurrentSession(null);
-    setProjectName("CREATE YOUR PROJECT");
-  }
+  const openWorkspace = () => {
+    setSidebarOpen(false);
+    jumpTo("overview");
+  };
 
-  async function handleGrunbook() {
+  const openSidebar = () => {
+    setSidebarOpen(true);
+    showToast("Workspace sidebar opened");
+  };
+
+  const openSettings = () => {
+    showToast("Settings are not connected in this prototype");
+  };
+
+  const generateArtifact = (kind: Exclude<LoadingAction, null>) => {
+    if (!isCompleted || loadingAction) return;
+
+    setLoadingAction(kind);
+    window.setTimeout(() => {
+      setGeneratedArtifacts((current) => ({ ...current, [kind]: true }));
+      setLoadingAction(null);
+      showToast(kind === "test" ? "Test Case generated successfully" : "Runbook generated successfully");
+      if (kind === "runbook") jumpTo("runbook");
+    }, 900);
+  };
+
+  const copyRunbook = async () => {
     try {
-      const result = await generateRunbook(currentSession.session_id);
-
-      console.log(result);
-      setMessage(result.text ?? JSON.stringify(result));
-    } catch (err) {
-      console.error(err);
-      setMessage("Stop failed");
+      await navigator.clipboard.writeText(runbookText);
+    } catch {
+      // The visual acknowledgement still helps when clipboard access is blocked.
     }
-  }
-    async function handleGtest() {
-    try {
-      const result = await generateTest(currentSession.session_id);
 
-      console.log(result);
-      setMessage(result.text ?? JSON.stringify(result));
-    } catch (err) {
-      console.error(err);
-      setMessage("Stop failed");
-    }
-  }
+    setCopied(true);
+    showToast("Runbook copied");
+    window.setTimeout(() => setCopied(false), 1200);
+  };
 
+  const visibleEventState = (event: (typeof traceEvents)[number]) => {
+    if (selectedStep === event.step) return "Selected";
+    if (isRecording && event.step > Math.max(1, Math.min(actionsCaptured, 6))) return "Pending";
+    if (isCompleted && event.step <= 6) return "Done";
+    return event.state;
+  };
 
+  const visibleEventClass = (event: (typeof traceEvents)[number]) => {
+    if (selectedStep === event.step) return "";
+    if (visibleEventState(event) === "Done") return "done";
+    if (visibleEventState(event) === "Pending") return "pending";
+    return event.stateClass;
+  };
 
   return (
     <main className="screen-shell" aria-label="Trailwise 09 console preview">
-      <section className="console-screen">
+      <section className={`console-screen ${sidebarOpen ? "sidebar-open" : ""}`}>
         <aside className="mission-rail" aria-label="Primary navigation">
           <div className="account-avatar">AK</div>
           <div className="rail-rule" />
           <div className="orbit" />
 
-          <button className="rail-item active" aria-label="Workspace">
+          <button className="rail-item active" aria-label="Workspace" onClick={openWorkspace}>
             <LayoutDashboard {...icon20} aria-hidden="true" />
           </button>
-          <button className="rail-item item-2" aria-label="Dashboard">
+          <button className="rail-item item-2" aria-label="Open sidebar" onClick={openSidebar}>
             <Grid2X2 {...icon20} aria-hidden="true" />
           </button>
           <button className="rail-item item-3" aria-label="Trace" onClick={() => jumpTo("trace")}>
@@ -442,7 +342,7 @@ export default function App() {
           <button className="rail-item item-4" aria-label="Runbook" onClick={() => jumpTo("runbook")}>
             <BookOpen {...icon20} aria-hidden="true" />
           </button>
-          <button className="rail-item settings" aria-label="Settings">
+          <button className="rail-item settings" aria-label="Settings" onClick={openSettings}>
             <Settings {...icon20} aria-hidden="true" />
           </button>
 
@@ -457,7 +357,7 @@ export default function App() {
           <button className="mobile-sidebar-toggle" aria-label="Open workspace sidebar" onClick={openSidebar}>
             <PanelsTopLeft {...icon18} aria-hidden="true" />
           </button>
-          <img className="brand-logo" src="/src/assets/trailwise-logo-exact.svg" alt="Trailwise" />
+          <img className="brand-logo" src="/assets/trailwise-logo-exact.svg" alt="Trailwise" />
           <label className="search-box">
             <Search {...icon18} aria-hidden="true" />
             <span>Search recordings, runbooks, actions...</span>
@@ -482,15 +382,13 @@ export default function App() {
           <div className="workspace-title">ACME WORKSPACE</div>
           <div className="workspace-meta">4 projects / local helper on</div>
 
-          <ProjectsBar
-            sessions={sessions}
-            loadSessions={loadSessions}
-            currentSession={currentSession}
-            onOpen={(session) => {
-              setCurrentSession(session);
-              setProjectName(session.session_id);
-            }}
-          />  
+          <div className="section-label">Projects</div>
+          <div className="project-row active">
+            <FileCode className="project-icon" {...icon18} aria-hidden="true" />
+            <strong>Expense Approval</strong>
+            <span>Project detail</span>
+            <em>{actionsCaptured}</em>
+          </div>
           <div className="project-row">
             <PanelsTopLeft className="project-icon" {...icon18} aria-hidden="true" />
             <strong>Onboarding Flow</strong>
@@ -552,18 +450,16 @@ export default function App() {
           <div className="title-icon">
             <GitBranch {...icon20} aria-hidden="true" />
           </div>
-
-          <div style={{ display: "grid"}}>
-            <div className="title-row">
-              <h1>{projectName} {currentSession ? "workflow" : ""}</h1>
-              <span className={isRecording ? "pill red" : isCompleted ? "pill green" : "pill amber"}>
-                {statusLabel}
-              </span>
-              {/*<span className="pill">{actionsCaptured} events</span>*/}
-              <span className={isCompleted ? "pill green" : "pill amber"}>
-                {isCompleted ? "Artifacts ready" : "Runbook draft"}
-              </span>
-            </div>
+          <div className="title-row">
+            <h1>{selectedRecording.title} workflow</h1>
+            <span className={isRecording ? "pill red" : isCompleted ? "pill green" : "pill amber"}>
+              {statusLabel}
+            </span>
+            <span className="pill">{actionsCaptured} events</span>
+            <span className={isCompleted ? "pill green" : "pill amber"}>
+              {isCompleted ? "Artifacts ready" : "Runbook draft"}
+            </span>
+          </div>
           <label className="target-url-row">
             <span>Target URL</span>
             <input
@@ -573,8 +469,6 @@ export default function App() {
               placeholder="http://localhost:5173"
             />
           </label>
-          </div>
-
           <div className="tabs">
             <button className={activePanel === "overview" ? "active" : ""} onClick={() => jumpTo("overview")}>
               <LayoutDashboard {...icon18} aria-hidden="true" />
@@ -589,7 +483,8 @@ export default function App() {
               <span>Runbook</span>
             </button>
           </div>
-<div className={`content-grid panel-${activePanel}`}>
+
+          <div className={`content-grid panel-${activePanel}`}>
             <div className="primary-column">
               <article className={`summary-card stage-${workflowStage} ${isRecording ? "is-live" : ""}`} ref={summaryRef}>
                 <div className="phase-strip" aria-label="Workflow progress">
@@ -660,7 +555,7 @@ export default function App() {
                   )}
                   {workflowStage === "record" && (
                     <>
-                      <button className="btn dark primary-action" onClick={handleStop}>
+                      <button className="btn dark primary-action" onClick={stopRecording}>
                         Stop recording <Square {...icon18} aria-hidden="true" />
                       </button>
                       <button className="btn light" onClick={checkStatus}>
@@ -866,6 +761,5 @@ export default function App() {
         ))}
       </div>
     </main>
-          
   );
 }

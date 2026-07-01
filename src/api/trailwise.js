@@ -29,11 +29,26 @@ export function statusRecording() {
   return slackCommand("status");
 }
 
-export function generateTest() {
-  return slackCommand("generate-test");
+export async function generateTest(id) {
+  const res = await fetch(`${API}/sessions/${id}/generate`, {
+    method: "POST",
+  });
+
+  return res.json();
 }
 
-export function generateRunbook() {
-  return slackCommand("generate-runbook");
+export async function generateRunbook(id) {
+  const res = await fetch(`${API}/sessions/${id}/generate-runbook`, {
+    method: "POST",
+  });
+
+  return res.json();
 }
 
+export async function deleteSession(id) {
+  const res = await fetch(`${API}/dev/sessions/${id}`, {
+    method: "DELETE",
+  });
+
+  return res.json();
+}

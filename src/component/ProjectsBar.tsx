@@ -1,32 +1,30 @@
 import { useEffect, useState } from "react";
+import ProjectCard from "./ProjectCard";
 
-export default function ProjectsBar() {
-  const [sessions, setSessions] = useState([]);
-
+export default function ProjectsBar({
+  sessions,
+  loadSessions,
+  onOpen,
+  currentSession,
+}) {
   useEffect(() => {
     loadSessions();
   }, []);
 
-  async function loadSessions() {
-    const res = await fetch("http://localhost:3000/dev/sessions");
-    const data = await res.json();
-
-    setSessions(data.sessions);
-  }
-
   return (
     <div>
-      <h1>Sessions</h1>
+      <div className="section-label">Projects</div>
 
       {sessions.map((session) => (
-        <div key={session.session_id}>
-          <button>
-          <h3>{session.session_id}</h3>
-          <p>Status: {session.status}</p>
-          </button>
-        </div>
-      ))}
+      <ProjectCard
+        key={session.session_id}
+        session={session}
+        selected={
+          currentSession?.session_id === session.session_id
+        }
+        onOpen={() => onOpen(session)}
+      />
+    ))}
     </div>
   );
 }
-
