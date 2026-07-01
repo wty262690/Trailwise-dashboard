@@ -1,15 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import ProjectCard from "./ProjectCard";
+
+interface ProjectsBarProps {
+  sessions: Array<{ session_id: string; status: string }>;
+  loadSessions: () => Promise<void> | void;
+  onOpen: (session: { session_id: string; status: string }) => void;
+  currentSession: { session_id: string; status?: string } | null;
+}
 
 export default function ProjectsBar({
   sessions,
   loadSessions,
   onOpen,
   currentSession,
-}) {
+}: ProjectsBarProps) {
   useEffect(() => {
-    loadSessions();
-  }, []);
+    void loadSessions();
+  }, [loadSessions]);
 
   return (
     <div>

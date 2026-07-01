@@ -185,6 +185,7 @@ svg {
 }
 
 .rail-item {
+  top: 168px;
   position: absolute;
   left: 18px;
   display: grid;

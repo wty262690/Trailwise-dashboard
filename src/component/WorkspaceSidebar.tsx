@@ -1,0 +1,105 @@
+import { BookOpen, CircleDot, PanelsTopLeft } from "lucide-react";
+import ProjectsBar from "./ProjectsBar";
+
+const icon18 = { size: 18, strokeWidth: 1.75 };
+
+type RecordingSeedItem = {
+  id: string;
+  title: string;
+  path: string;
+  badge: string;
+  tone: string;
+  actions: number;
+  duration: number;
+};
+
+interface WorkspaceSidebarProps {
+  sessions: any[];
+  currentSession: any;
+  loadSessions: () => Promise<void>;
+  recordingSeed: RecordingSeedItem[];
+  selectedRecordingId: string;
+  isRecording: boolean;
+  isCompleted: boolean;
+  onSelectRecording: (recordingId: string) => void;
+  onOpenSession: (session: any) => void;
+}
+
+export default function WorkspaceSidebar({
+  sessions,
+  currentSession,
+  loadSessions,
+  recordingSeed,
+  selectedRecordingId,
+  isRecording,
+  isCompleted,
+  onSelectRecording,
+  onOpenSession,
+}: WorkspaceSidebarProps) {
+  return (
+    <aside className="context-sidebar">
+      <div className="workspace-title">ACME WORKSPACE</div>
+      <div className="workspace-meta">4 projects / local helper on</div>
+
+      <ProjectsBar
+        sessions={sessions}
+        loadSessions={loadSessions}
+        currentSession={currentSession}
+        onOpen={onOpenSession}
+      />
+
+      <div className="project-row">
+        <PanelsTopLeft className="project-icon" {...icon18} aria-hidden="true" />
+        <strong>Onboarding Flow</strong>
+        <span>2 recordings</span>
+        <em>2</em>
+      </div>
+      <div className="project-row">
+        <BookOpen className="project-icon" {...icon18} aria-hidden="true" />
+        <strong>Checkout QA</strong>
+        <span>Runbook ready</span>
+        <em className="green">1</em>
+      </div>
+
+      <div className="section-label recordings-title">Recent recordings</div>
+      {recordingSeed.map((recording) => {
+        const isSelected = recording.id === selectedRecordingId;
+        const badge =
+          isSelected && isRecording ? "Recording" : isSelected && isCompleted ? "Completed" : recording.badge;
+
+        return (
+          <button
+            className={isSelected ? "recording-row active" : "recording-row"}
+            key={recording.id}
+            onClick={() => onSelectRecording(recording.id)}
+          >
+            <CircleDot
+              className={
+                isSelected
+                  ? `status-icon red ${isRecording ? "recording-pulse" : ""}`
+                  : `status-icon ${recording.tone}`
+              }
+              {...icon18}
+              aria-hidden="true"
+            />
+            <strong>{recording.title}</strong>
+            <span>{recording.path}</span>
+            <em className={isSelected && isRecording ? "red" : recording.tone}>{badge}</em>
+          </button>
+        );
+      })}
+
+      <div className="sidebar-divider" />
+      <div className="helper-card">
+        <div>
+          <strong>Local helper</strong>
+          <span className="pill green">Ready</span>
+        </div>
+        <p>Mac confirmation is required before the browser recording starts.</p>
+        <span className="progress">
+          <i />
+        </span>
+      </div>
+    </aside>
+  );
+}

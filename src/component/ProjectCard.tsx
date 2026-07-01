@@ -1,8 +1,14 @@
+interface ProjectCardProps {
+    session: { session_id: string; status: string };
+    selected: boolean;
+    onOpen: () => void;
+}
+
 export default function ProjectCard({
     session,
     selected,
     onOpen
-}) {
+}: ProjectCardProps) {
 
     return(
         <button
