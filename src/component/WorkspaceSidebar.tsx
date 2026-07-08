@@ -1,27 +1,9 @@
-import { BookOpen, CircleDot, PanelsTopLeft } from "lucide-react";
 import ProjectsBar from "./ProjectsBar";
-
-const icon18 = { size: 18, strokeWidth: 1.75 };
-
-type RecordingSeedItem = {
-  id: string;
-  title: string;
-  path: string;
-  badge: string;
-  tone: string;
-  actions: number;
-  duration: number;
-};
 
 interface WorkspaceSidebarProps {
   sessions: any[];
   currentSession: any;
   loadSessions: () => Promise<void>;
-  recordingSeed: RecordingSeedItem[];
-  selectedRecordingId: string;
-  isRecording: boolean;
-  isCompleted: boolean;
-  onSelectRecording: (recordingId: string) => void;
   onOpenSession: (session: any) => void;
 }
 
@@ -29,11 +11,6 @@ export default function WorkspaceSidebar({
   sessions,
   currentSession,
   loadSessions,
-  recordingSeed,
-  selectedRecordingId,
-  isRecording,
-  isCompleted,
-  onSelectRecording,
   onOpenSession,
 }: WorkspaceSidebarProps) {
   return (
@@ -48,7 +25,7 @@ export default function WorkspaceSidebar({
         onOpen={onOpenSession}
       />
 
-      <div className="project-row">
+      {/*<div className="project-row">
         <PanelsTopLeft className="project-icon" {...icon18} aria-hidden="true" />
         <strong>Onboarding Flow</strong>
         <span>2 recordings</span>
@@ -59,10 +36,10 @@ export default function WorkspaceSidebar({
         <strong>Checkout QA</strong>
         <span>Runbook ready</span>
         <em className="green">1</em>
-      </div>
+      </div>*/}
 
-      <div className="section-label recordings-title">Recent recordings</div>
-      {recordingSeed.map((recording) => {
+      {/*<div className="section-label recordings-title">Recent recordings</div>*/}
+      {/*recordingSeed.map((recording) => {
         const isSelected = recording.id === selectedRecordingId;
         const badge =
           isSelected && isRecording ? "Recording" : isSelected && isCompleted ? "Completed" : recording.badge;
@@ -87,7 +64,7 @@ export default function WorkspaceSidebar({
             <em className={isSelected && isRecording ? "red" : recording.tone}>{badge}</em>
           </button>
         );
-      })}
+      })*/}
 
       <div className="sidebar-divider" />
       <div className="helper-card">

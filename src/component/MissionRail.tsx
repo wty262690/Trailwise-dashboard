@@ -1,8 +1,8 @@
-import { BookOpen, Grid2X2, LayoutDashboard, Route, Settings } from "lucide-react";
+import { BookOpen, LayoutDashboard, Route, Settings } from "lucide-react";
 
 const icon20 = { size: 20, strokeWidth: 1.75 };
 
-type Panel = "overview" | "trace" | "runbook";
+type Panel = "overview" | "trace" | "runbook" | "automation";
 
 interface MissionRailProps {
   activePanel: Panel;
@@ -39,18 +39,18 @@ export default function MissionRail({
         aria-label={sidebarOpen ? "Collapse sidebar" : "Open sidebar"}
         onClick={onToggleSidebar}
       >
-        <Grid2X2 {...icon20} aria-hidden="true" />
+        <Settings {...icon20} aria-hidden="true" />
       </button>
       <button
         className={activePanel === "trace" ? "rail-item item-3 active" : "rail-item item-3"}
-        aria-label="Trace"
+        aria-label="Learned memory"
         onClick={() => onJumpTo("trace")}
       >
         <Route {...icon20} aria-hidden="true" />
       </button>
       <button
         className={activePanel === "runbook" ? "rail-item item-4 active" : "rail-item item-4"}
-        aria-label="Runbook"
+        aria-label="Outputs"
         onClick={() => onJumpTo("runbook")}
       >
         <BookOpen {...icon20} aria-hidden="true" />
@@ -67,3 +67,4 @@ export default function MissionRail({
     </aside>
   );
 }
+

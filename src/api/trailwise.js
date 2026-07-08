@@ -17,15 +17,30 @@ async function slackCommand(text) {
   return res.json();
 }
 
-export function startRecording(url) {
+export function startRecording(url, sessionId) {
+  if (sessionId) {
+    // start sess_xxx http://localhost:5173
+    return slackCommand(`start ${sessionId} ${url}`);
+  }
+
+  // start http://localhost:5173
   return slackCommand(`start ${url}`);
 }
 
-export function stopRecording() {
+export function stopRecording(sessionId) {
+  if (sessionId) {
+    return slackCommand(`stop ${sessionId}`);
+  }
+
   return slackCommand("stop");
 }
 
-export function statusRecording() {
+
+export function statusRecording(sessionId) {
+  if (sessionId) {
+    return slackCommand(`status ${sessionId}`);
+  }
+
   return slackCommand("status");
 }
 

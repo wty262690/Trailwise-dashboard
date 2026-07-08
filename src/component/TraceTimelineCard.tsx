@@ -41,6 +41,7 @@ const TraceTimelineCard = forwardRef<HTMLElement, TraceTimelineCardProps>(functi
   };
 
   return (
+  
     <article
       className={`timeline-card ${workflowStage === "record" || workflowStage === "review" ? "is-emphasized" : "is-secondary"}`}
       ref={ref}
