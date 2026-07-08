@@ -201,7 +201,7 @@ export default function App() {
         : "Ready";
   const workflowStage: WorkflowStage = sessionStatus
     ? sessionStatus.includes("pending")
-      ? "prepare"
+      ? "record"
       : sessionStatus.includes("recording")
         ? "record"
         : sessionStatus.includes("stop") || sessionStatus.includes("stopped") || sessionStatus.includes("recorded") || sessionStatus.includes("finished") || sessionStatus.includes("completed")
