@@ -48,8 +48,8 @@ export async function generateTest(id) {
   const res = await fetch(`${API}/sessions/${id}/generate`, {
     method: "POST",
   });
-
-  return res.json();
+  console.log (res);
+  //return res.json();
 }
 
 export async function generateRunbook(id) {

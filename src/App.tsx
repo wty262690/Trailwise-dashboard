@@ -1,6 +1,7 @@
 
-import { startRecording, stopRecording, statusRecording } from "./api/trailwise";
+import { deleteSession, generateTest, startRecording, statusRecording, stopRecording } from "./api/trailwise";
 import MissionRail from "./component/MissionRail";
+import ProjectDelete from "./component/ProjectDelete";
 import TopBar from "./component/TopBar";
 import WorkspaceSidebar from "./component/WorkspaceSidebar";
 import { AnimatedTabs, type AnimatedTabItem } from "./component/ui/AnimatedTabs";
@@ -188,6 +189,7 @@ export default function App() {
     recordingSeed.find((recording) => recording.id === selectedRecordingId) ?? recordingSeed[0];
   const selectedEvent = traceEvents.find((event) => event.step === selectedStep) ?? traceEvents[3];
   const sessionStatus = currentSession?.status?.toLowerCase() ?? "";
+  const isSessionPending = sessionStatus.includes("pending");
   const isSessionRecording = sessionStatus.includes("recording");
   const isSessionCompleted = /completed|finished|recorded|stop|stopped|stopping/.test(sessionStatus);
   const isRecording = sessionStatus ? isSessionRecording : recordingPhase === "recording";
@@ -357,11 +359,13 @@ export default function App() {
 
     const confirmMemory = () => {
     if (!isCompleted) {
+
       showToast("Complete the recording before confirming memory");
       return;
     }
 
     setMemoryConfirmed(true);
+    generateTest(currentSession?.session_id);
     jumpTo("overview");
     showToast("Workflow memory saved");
     };
@@ -414,6 +418,23 @@ export default function App() {
     setSessions(data.sessions.filter((s: { status: string }) => s.status !== "deleted"));
   }
 
+  const handleDeleteProject = async (session: { session_id: string }) => {
+    try {
+      await deleteSession(session.session_id);
+      if (currentSession?.session_id === session.session_id) {
+        setCurrentSession(null);
+        setRecordingPhase("ready");
+        setMemoryConfirmed(false);
+      }
+      await loadSessions();
+      jumpTo("overview");
+      showToast(`Deleted ${session.session_id}`);
+    } catch (error) {
+      console.error("Delete failed", error);
+      showToast("Delete failed", "error");
+    }
+  };
+
 
    const beginRecording = async () => {
     if (isRecording) return;
@@ -439,14 +460,19 @@ export default function App() {
             if (newSession) {
               setCurrentSession(newSession);
               setProjectName(newSession.session_id);
+              const newStatus = newSession.status?.toLowerCase() ?? "";
+              setRecordingPhase(newStatus.includes("recording") ? "recording" : "ready");
+              showToast(
+                newStatus.includes("recording")
+                  ? "Recording started"
+                  : "Session created. Confirm it in the Mac helper to start recording."
+              );
             }
 
-            setRecordingPhase("recording");
             setDurationSeconds(0);
             setActionsCaptured(0);
             setSelectedStep(1);
             jumpTo("overview");
-            showToast("Recording started");
           }
     
           if (result.text?.[0] === "R") {
@@ -459,13 +485,22 @@ export default function App() {
   };
 
   const handleStop = async () => {
-    if (!isRecording || !currentSession) return;
+    if (!currentSession) return;
+    if (isSessionPending) {
+      showToast("Confirm the recording in the Mac helper before stopping", "error");
+      return;
+    }
+    if (!isRecording) {
+      showToast("Recording has not started yet", "error");
+      return;
+    }
     try {
         const result = await stopRecording(currentSession.session_id);
 
         console.log(result);
         setMessage(result.text ?? JSON.stringify(result));
         setRecordingPhase("completed");
+        setCurrentSession((session) => (session ? { ...session, status: "stopping" } : session));
         setSelectedStep(4);
         jumpTo("trace");
         showToast("Recording completed");
@@ -564,6 +599,7 @@ export default function App() {
               <span>Session status: {currentSession.status ?? "Unknown"}</span>
             </div>
           )}
+          <ProjectDelete session={currentSession} onDelete={handleDeleteProject} />
           <AnimatedTabs activeId={activePanel} items={mainTabs} onChange={(panel) => openPanel(panel as Panel)} />
 
 
