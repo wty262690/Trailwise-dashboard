@@ -17,27 +17,26 @@ import TopBar from "./component/TopBar";
 import WorkspaceSidebar from "./component/WorkspaceSidebar";
 import { AnimatedTabs, type AnimatedTabItem } from "./component/ui/AnimatedTabs";
 import { GridBackground } from "./component/ui/GridBackground";
-import { MovingBorderButton } from "./component/ui/MovingBorderButton";
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Activity,
   BookOpen,
   Bot,
-  CircleDot,
-  Copy,
-  FileCode,
-  GitBranch,
   LayoutDashboard,
-  Play,
   Route,
-  Square,
 } from "lucide-react";
 import ProjectDelete from "./component/ProjectDelete";
+import WorkflowOverviewPanel from "./component/WorkflowOverviewPanel";
+import TraceReviewPanel from "./component/TraceReviewPanel";
+import RunbookPanel from "./component/RunbookPanel";
+import AutomationPanel from "./component/AutomationPanel";
+import WorkflowHeader from "./component/WorkflowHeader";
+import WorkflowInspector from "./component/WorkflowInspector";
+import WorkflowLayout from "./component/WorkflowLayout";
+import type { LoadingAction, Panel, ProjectSession, Toast, TraceEventItem, WorkflowStage, ThemeMode, RecordingPhase } from "./component/types";
+import { formatDuration, transformTraceEvents } from "./component/workflowHelpers";
 
 const icon18 = { size: 18, strokeWidth: 1.75 };
-const icon20 = { size: 20, strokeWidth: 1.75 };
-
 
 const recordingSeed = [
   {
@@ -78,19 +77,6 @@ const recordingSeed = [
   },
 ];
 
-type Panel = "overview" | "trace" | "runbook" | "automation";
-type RecordingPhase = "ready" | "recording" | "completed";
-type WorkflowStage = "prepare" | "record" | "review" | "generate";
-type LoadingAction = "test" | "runbook" | null;
-type ThemeMode = "light" | "dark";
-type Toast = { id: number; message: string; tone?: "error" | "default" };
-
-function formatDuration(totalSeconds: number) {
-  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
-  const seconds = (totalSeconds % 60).toString().padStart(2, "0");
-  return `${minutes}:${seconds}`;
-}
-
 export default function App() {
   const [themeMode] = useState<ThemeMode>(() => {
     try {
@@ -101,19 +87,10 @@ export default function App() {
   });
   const [, setMessage] = useState("");
   const [, setProjectName] = useState("CREATE YOUR PROJECT");
-  type ProjectSession = {
-    session_id: string;
-    status: string;
-    target_url?: string;
-    generated_artifact_path?: string;
-    generated_runbook_path?: string;
-    generated_skill_path?: string;
-  };
   const [currentSession, setCurrentSession] = useState<ProjectSession | null>(null);
   const [sessions, setSessions] = useState<ProjectSession[]>([]);
 
   const [activePanel, setActivePanel] = useState<Panel>("overview");
-  const [selectedRecordingId] = useState("expense");
   const [selectedStep, setSelectedStep] = useState(4);
   const [recordingPhase, setRecordingPhase] = useState<RecordingPhase>("ready");
   const [durationSeconds, setDurationSeconds] = useState(recordingSeed[0].duration);
@@ -130,34 +107,6 @@ export default function App() {
   const automationRef = useRef<HTMLElement>(null);
   const [memoryConfirmed, setMemoryConfirmed] = useState(false);
   const [runbookText, setRunbookText] = useState("No runbook generated yet");
-  type TraceEventItem = {
-    step: number;
-    action: string;
-    state: string;
-    stateClass: string;
-    time: string;
-    selector: string;
-    result: string;
-  };
-
-  function transformTraceEvents(events: any[]): TraceEventItem[] {
-    return events
-      .filter(
-        (event) =>
-          event.type !== "session_started" &&
-          event.type !== "session_stopped" &&
-          event.type !== "session_cancelled",
-      )
-      .map((event, index) => ({
-        step: index + 1,
-        action: buildAction(event),
-        state: "Done",
-        stateClass: "done",
-        time: formatTime(event.ts),
-        selector: event.selector ?? event.url ?? "-",
-        result: buildResult(event),
-      }));
-  }
 
   const [traceEvents, setTraceEvents] = useState<TraceEventItem[]>([]);
   const [traceLoading, setTraceLoading] = useState(false);
@@ -174,8 +123,6 @@ export default function App() {
     }
   }, [themeMode]);
 
-  const selectedRecording =
-    recordingSeed.find((recording) => recording.id === selectedRecordingId) ?? recordingSeed[0];
   const selectedEvent =
     traceEvents.find((event) => event.step === selectedStep) ??
     traceEvents[0] ??
@@ -362,49 +309,6 @@ const workflowStage: WorkflowStage =
   };
   
 
-  const handleLoadRecordingDetails = async () => {
-    if (!currentSession) return;
-
-    try {
-      const log = await getRecordingLog(currentSession.session_id);
-      console.log("Full recording:", log);
-
-      if (!log.events?.length) {
-        console.warn("No recorded events were found.");
-        showToast("Recording completed, but no browser events were captured", "error");
-        return;
-      }
-
-      else{
-          const uiEvents = log.events.map((event) => ({
-            step: event.seq,
-            action: buildAction(event),
-            state: "Done",
-            stateClass: "done",
-            time: formatTime(event.ts),
-            selector: event.selector ?? event.url ?? "-",
-            result: buildResult(event),
-          }));
-
-          setTraceEvents(uiEvents);
-          if (uiEvents.length > 0) {
-            setSelectedStep(uiEvents[0].step);
-          }
-      }
-
-      showToast(`Loaded ${log.events.length} recorded actions`);
-    } catch (error) {
-      console.error("Failed to load recording details:", error);
-
-      showToast(
-        error instanceof Error
-          ? error.message
-          : "Failed to load recording details",
-        "error",
-      );
-    }
-  };
-
 const loadRecordingDetails = async (
   sessionId: string,
 ): Promise<TraceEventItem[]> => {
@@ -443,67 +347,6 @@ const loadRecordingDetails = async (
     }
   }
 };
-
-  function buildAction(event) {
-    switch (event.type) {
-      case "session_started":
-        return `Start recording`;
-
-      case "navigation":
-        return `Navigate to ${event.url}`;
-
-      case "click":
-        return `Click ${event.text || event.selector}`;
-
-      case "input":
-        return `Input ${event.label || event.selector}`;
-
-      case "submit":
-        return "Submit form";
-
-      case "session_stopped":
-        return "Stop recording";
-
-      default:
-        return event.type;
-    }
-  }
-  function buildResult(event) {
-    switch (event.type) {
-      case "navigation":
-        return "Page loaded";
-
-      case "click":
-        return event.text || "Clicked element";
-
-      case "input":
-        return event.value || "Input entered";
-
-      case "submit":
-        return "Form submitted";
-
-      case "session_started":
-        return "Recording started";
-
-      case "session_stopped":
-        return "Recording finished";
-
-      default:
-        return "-";
-    }
-  }
-
-  function formatTime(ms) {
-    if (ms == null) return "--:--";
-
-    const seconds = Math.floor(ms / 1000);
-
-    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
-    const s = String(seconds % 60).padStart(2, "0");
-
-    return `${m}:${s}`;
-  }
-
 
   const handleGenerateRunbook = async () => {
     const sessionId = currentSession?.session_id;
@@ -970,475 +813,131 @@ const visibleEventClass = (event: TraceEventItem) => {
   return event.stateClass;
 };
   return (
-    <main className="screen-shell" aria-label="Trailwise 09 console preview">
-      <section className={`console-screen ${sidebarOpen ? "sidebar-open" : ""}`}>
-        <MissionRail
-          activePanel={activePanel}
-          sidebarOpen={sidebarOpen}
-          onOpenWorkspace={openWorkspace}
-          onToggleSidebar={toggleSidebar}
-          onJumpTo={jumpTo}
-          onOpenSettings={openSettings}
-        />
+    <WorkflowLayout
+      sidebarOpen={sidebarOpen}
+      sidebar={
+        <>
+          <MissionRail
+            activePanel={activePanel}
+            sidebarOpen={sidebarOpen}
+            onOpenWorkspace={openWorkspace}
+            onToggleSidebar={toggleSidebar}
+            onJumpTo={jumpTo}
+            onOpenSettings={openSettings}
+          />
 
-        <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
+          <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
 
-
-        <button
-          className="sidebar-backdrop"
-          aria-label="Close workspace sidebar"
-          onClick={() => setSidebarOpen(false)}
-          type="button"
-        />
-        <WorkspaceSidebar
-          sessions={sessions}
-          currentSession={currentSession}
-          loadSessions={loadSessions}
-          onOpenSession={openProjectSession}
-        />
-
-        <section className="workspace">
-          <div className="header-surface" />
-          <div className="header-grid" />
+          <button
+            className="sidebar-backdrop"
+            aria-label="Close workspace sidebar"
+            onClick={() => setSidebarOpen(false)}
+            type="button"
+          />
+          <WorkspaceSidebar
+            sessions={sessions}
+            currentSession={currentSession}
+            loadSessions={loadSessions}
+            onOpenSession={openProjectSession}
+          />
+        </>
+      }
+      header={
+        <>
           <GridBackground className="workspace-grid-background" />
-          <div className="breadcrumb">Trailwise / Projects / Expense Approval / Trace detail</div>
-          <div className="title-icon">
-            <GitBranch {...icon20} aria-hidden="true" />
-          </div>
-
-          <div className="title-row">
-            <h1>Record {currentSession?.session_id || "New"} workflow</h1>
-            <span className={isRecording ? "pill red" : isCompleted ? "pill green" : "pill amber"}>
-              {statusLabel}
-            </span>
-            <span className={isCompleted ? "pill green" : "pill amber"}>
-              {memoryConfirmed ? "Memory saved" : isCompleted ? "Review memory" : "Not recorded yet"}
-            </span>
-          </div>
-          {currentSession && (
-            <div className="session-status-row">
-              <span>Session status: {currentSession.status ?? "Unknown"}</span>
-            </div>
-          )}
-          <ProjectDelete
-            session={currentSession}
-            onDelete={handleDelete}
-          ></ProjectDelete>
+          <WorkflowHeader
+            title={`Record ${currentSession?.session_id || "New"} workflow`}
+            statusLabel={statusLabel}
+            isRecording={isRecording}
+            isCompleted={isCompleted}
+            memoryConfirmed={memoryConfirmed}
+            currentSessionStatus={currentSession?.status ?? undefined}
+          />
+          <ProjectDelete session={currentSession} onDelete={handleDelete} />
           <AnimatedTabs activeId={activePanel} items={mainTabs} onChange={(panel) => openPanel(panel as Panel)} />
-
-
-          <div className={`content-grid panel-${activePanel}`}>
-            <div className="primary-column">
-              {activePanel === "overview" && (
-                <article className={`summary-card stage-${workflowStage} ${isRecording ? "is-live" : ""}`} ref={summaryRef}>
-                  <div className="phase-strip" aria-label="Workflow progress">
-                    {workflowSteps.map((step, index) => {
-                      const stepState =
-                        index < workflowStageIndex ? "complete" : index === workflowStageIndex ? "active" : "future";
-                      return (
-                        <button
-                          className={`phase-step ${stepState}`}
-                          disabled={stepState === "future"}
-                          key={step.id}
-                          onClick={() => {
-                            if (step.id === "prepare") jumpTo("overview");
-                            if (step.id === "record") jumpTo("overview");
-                            if (step.id === "review") openPanel("trace");
-                            if (step.id === "generate") openPanel("runbook");
-                          }}
-                          type="button"
-                        >
-                          <span>{index + 1}</span>
-                          <strong>{step.label}</strong>
-                          <em>{step.detail}</em>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="stage-header">
-                    <div>
-                      <span className="stage-eyebrow">{stageCopy[workflowStage].eyebrow}</span>
-                      <h2>{stageCopy[workflowStage].title}</h2>
-                      <p>{stageCopy[workflowStage].body}</p>
-                    </div>
-                    <span className={`stage-status ${isRecording ? "red recording-pulse" : isCompleted ? "green" : ""}`}>
-                      <CircleDot {...icon18} aria-hidden="true" />
-                      {stageCopy[workflowStage].status}
-                    </span>
-                  </div>
-                  <div className="guided-stage-grid">
-                    <div className="guided-stage-primary">
-                      {workflowStage === "prepare" && (
-                        <div className="target-capture-panel">
-                          <label className="guided-url-field">
-                            <span>Target URL</span>
-                            <input
-                              aria-label="Target URL"
-                              value={targetUrl}
-                              onChange={(event) => setTargetUrl(event.target.value)}
-                              placeholder="http://localhost:5173"
-                            />
-                          </label>
-                          <div className="helper-inline">
-                            <CircleDot {...icon18} aria-hidden="true" />
-                            <div>
-                              <strong>Local helper ready</strong>
-                              <span>Chrome recording will start after local confirmation.</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {workflowStage === "record" && (
-                        <div className="target-capture-panel live-capture-panel">
-                          <div className="live-indicator">
-                            <CircleDot className="recording-pulse" {...icon18} aria-hidden="true" />
-                            <div>
-                              <strong>Recording browser workflow</strong>
-                              <span>Demonstrate the full path once, then stop to structure memory.</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="metrics">
-                        <div>
-                          <span>Status</span>
-                          <strong className={isRecording ? "red-text" : isCompleted ? "green-text" : ""}>
-                            {statusLabel}
-                          </strong>
-                        </div>
-                        <div>
-                          <span>Duration</span>
-                          <strong>{formatDuration(durationSeconds)}</strong>
-                        </div>
-                        <div>
-                          <span>Actions captured</span>
-                          <strong>{actionsCaptured}</strong>
-                        </div>
-                        <div>
-                          <span>Session</span>
-                          <strong>Active</strong>
-                        </div>
-                      </div>
-
-                      {isCompleted ? (
-                        <div className="learned-memory-panel">
-                          <div className="learned-head">
-                            <div>
-                              <span>WHAT TRAILWISE LEARNED</span>
-                              <h3>Expense approval can be reproduced from a clean browser state.</h3>
-                            </div>
-                            <span className={memoryConfirmed ? "pill green" : "pill amber"}>
-                              {memoryConfirmed ? "Confirmed" : "Needs review"}
-                            </span>
-                          </div>
-                          <ol>
-                            <li>
-                              <strong>Initial state</strong>
-                              <span>Open the target URL with the local helper connected.</span>
-                            </li>
-                            <li>
-                              <strong>Operating path</strong>
-                              <span>Create an approval request, fill required fields, and submit.</span>
-                            </li>
-                            <li>
-                              <strong>Expected result</strong>
-                              <span>Success confirmation appears and the result state is captured.</span>
-                            </li>
-                          </ol>
-                        </div>
-                      ) : (
-                        <div className="memory-entry-card">
-                          <div>
-                            <span>Workflow memory</span>
-                              <strong>{memoryConfirmed ? "Target URL and local helper ready" : "Waiting for recording"}</strong>
-                          </div>
-                          <div>
-                            <span>Initial state</span>
-                            <strong>{currentSession ? "Target URL and local helper ready" : "Waiting for session"}</strong>
-                          </div>
-                          <div>
-                            <span>Stage result</span>
-                            <strong>Record one successful workflow path</strong>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="stage-action-bar">
-                        {workflowStage === "prepare" && (
-                          <>
-                            <MovingBorderButton className="btn dark primary-action" onClick={beginRecording}>
-                              Start recording <Play {...icon18} aria-hidden="true" />
-                            </MovingBorderButton>
-                            <button className="btn light" onClick={checkStatus}>
-                              Check helper <Activity {...icon18} aria-hidden="true" />
-                            </button>
-                          </>
-                        )}
-                        {workflowStage === "record" && (
-                          <>
-                            <MovingBorderButton className="btn dark primary-action" onClick={handleStop}>
-                              Stop and structure memory <Square {...icon18} aria-hidden="true" />
-                            </MovingBorderButton>
-                            <button className="btn light" onClick={checkStatus}>
-                              Live status <Activity {...icon18} aria-hidden="true" />
-                            </button>
-                          </>
-                        )}
-                        {workflowStage === "review" && (
-                          <>
-                            <MovingBorderButton className="btn dark primary-action" onClick={confirmMemory}>
-                              Confirm memory <CircleDot {...icon18} aria-hidden="true" />
-                            </MovingBorderButton>
-                            <button className="btn light" onClick={() => openPanel("trace")}>
-                              Inspect details <Route {...icon18} aria-hidden="true" />
-                            </button>
-                          </>
-                        )}
-                        {workflowStage === "generate" && (
-                          <>
-                            <MovingBorderButton className="btn dark primary-action" onClick={queueAutomation}>
-                              Run robot <Bot {...icon18} aria-hidden="true" />
-                            </MovingBorderButton>
-                          <button
-                            className={
-                              loadingAction === "runbook"
-                                ? "btn light loading"
-                                : "btn light"
-                            }
-                            disabled={loadingAction !== null}
-                            onClick={() => {
-                              if (generatedArtifacts.runbook) {
-                                openPanel("runbook");
-                              } else {
-                                void handleGenerateRunbook();
-                              }
-                            }}
-                          >
-                            {loadingAction === "runbook"
-                              ? "Generating..."
-                              : generatedArtifacts.runbook
-                                ? "Open output"
-                                : "Generate Runbook"}
-
-                            <BookOpen {...icon18} aria-hidden="true" />
-                          </button>
-                            <button
-                              className={loadingAction === "test" ? "btn light loading" : "btn light"}
-                              disabled={loadingAction !== null}
-                              onClick={() => generateArtifact("test")}
-                            >
-                              Generate Test <FileCode {...icon18} aria-hidden="true" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <aside className="workflow-preview-panel">
-                      <span>{workflowStage === "generate" ? "READY TO REUSE" : "WHAT TRAILWISE CAPTURES"}</span>
-                      <h3>
-                        {workflowStage === "generate"
-                          ? "This memory can now guide people or a robot run."
-                          : workflowStage === "review"
-                            ? "Confirm the summary instead of reading every event."
-                            : "Record once, then reuse the workflow later."}
-                      </h3>
-                      <ul>
-                        <li>{workflowStage === "generate" ? "Run the automation robot" : "Browser actions and timing"}</li>
-                        <li>{workflowStage === "generate" ? "Generate Runbook or Test Case" : "Key screen states and stage results"}</li>
-                        <li>{workflowStage === "generate" ? "Pause for human handoff when needed" : "Sensitive input redaction"}</li>
-                      </ul>
-                    </aside>
-                  </div>
-                  <div className="trust-strip">
-                    <span>{isCompleted ? "Keyframes extracted" : "Target URL ready"}</span>
-                    <span>{isCompleted ? "Stage results" : "Local helper ready"}</span>
-                    <span>{memoryConfirmed ? "Memory saved" : isCompleted ? "Review required" : "Ready to record"}</span>
-                  </div>
-                </article>
-              )}
-
-              {activePanel === "trace" && (
-                <article
-                  className={`timeline-card ${
-                    workflowStage === "record" || workflowStage === "review" ? "is-emphasized" : "is-secondary"
-                  }`}
-                  ref={timelineRef}
-                >
-                  <h2>Review structured memory</h2>
-                  <p>Use this detail view only when you need to inspect the captured actions behind the memory summary.</p>
-                  <div className="timeline-layout">
-                    <div className="table">
-                      <div className="table-head">
-                        <span>Step</span>
-                        <span>Action</span>
-                        <span>State</span>
-                        <span>Time</span>
-                      </div>
-                      {traceEvents.map((event) => (
-                        <button
-                          className={selectedStep === event.step ? "table-row selected" : "table-row"}
-                          key={event.step}
-                          onClick={() => setSelectedStep(event.step)}
-                        >
-                          <span>{event.step}</span>
-                          <strong>{event.action}</strong>
-                          <em className={visibleEventClass(event)}>{visibleEventState(event)}</em>
-                          <span>{event.time}</span>
-                        </button>
-                      ))}
-                      <MovingBorderButton className="btn dark primary-action" onClick={confirmMemory}>
-                        Confirm memory <CircleDot {...icon18} aria-hidden="true" />
-                      </MovingBorderButton>
-                    </div>
-                    <div className="flow-map">
-                      <span>Stage map</span>
-                      <em className={selectedStep === 1 ? "active" : ""}>Nav</em>
-                      <em className={selectedStep === 3 ? "active" : ""}>Input</em>
-                      <em className={selectedStep === 4 ? "active" : ""}>Submit</em>
-                      <em className={selectedStep >= 5 ? "active" : ""}>Verify</em>
-                    </div>
-                  </div>
-                </article>
-              )}
-
-              {activePanel === "runbook" && (
-                <article
-                  className={`runbook-card ${workflowStage === "generate" ? "is-emphasized" : "is-secondary"}`}
-                  ref={runbookRef}
-                >
-                  <div className="card-head">
-                    <div>
-                      <h2>Outputs from workflow memory</h2>
-                      <p>Generated from workflow memory, with initial state and expected stage results preserved.</p>
-                    </div>
-                    <button className="btn light" disabled={!memoryConfirmed} onClick={copyRunbook}>
-                      Copy runbook <Copy {...icon18} aria-hidden="true" />
-                    </button>
-                  </div>
-                  <div className="code-panel">
-                    <div className="code-tabs">
-                      <span>workflow_memory.md</span>
-                      <span>runbook.md</span>
-                      <button aria-label="Copy" className={copied ? "copied" : ""} onClick={copyRunbook}>
-                        <Copy {...icon18} aria-hidden="true" />
-                      </button>
-                    </div>
-                    <pre>{runbookText}</pre>
-                  </div>
-                  <MovingBorderButton className="btn dark primary-action" onClick={ConfirmRunBook}>
-                    Confirm Run Book <Bot {...icon18} aria-hidden="true" />
-                  </MovingBorderButton>
-                </article>
-              )}
-
-              {activePanel === "automation" && (
-                <article className="automation-card is-emphasized" ref={automationRef}>
-                  <div className="card-head">
-                    <div>
-                      <span className="eyebrow">BACKGROUND AUTOMATION</span>
-                      <h2>Automation robot operator</h2>
-                      <p>Start a guided robot run from the confirmed workflow memory. Trailwise stays in the background and asks only when handoff is needed.</p>
-                    </div>
-                    <span className={isCompleted ? "pill green" : "pill amber"}>
-                      {isCompleted ? "Ready" : "Waiting"}
-                    </span>
-                  </div>
-
-                  <div className="automation-grid">
-                    <div>
-                      <GitBranch {...icon18} aria-hidden="true" />
-                      <strong>Workflow memory</strong>
-                      <span>{isCompleted ? `${actionsCaptured} actions with stage results` : "Waiting for structured memory"}</span>
-                    </div>
-                    <div>
-                      <Bot {...icon18} aria-hidden="true" />
-                      <strong>Robot control</strong>
-                      <span>{isCompleted ? "Plan, operate, verify, report" : "Paused until memory is ready"}</span>
-                    </div>
-                    <div>
-                      <Activity {...icon18} aria-hidden="true" />
-                      <strong>Human handoff</strong>
-                      <span>Stops for login, CAPTCHA, permissions, or confirmation</span>
-                    </div>
-                  </div>
-
-                  <div className="automation-footer">
-                    <button className="btn dark primary-action" disabled={!isCompleted} onClick={queueAutomation}>
-                      Queue robot run <Bot {...icon18} aria-hidden="true" />
-                    </button>
-                    <button className="btn light" onClick={checkStatus}>
-                      Check readiness <Activity {...icon18} aria-hidden="true" />
-                    </button>
-                  </div>
-                </article>
-              )}
-            </div>
+        </>
+      }
+      content={
+        <div className={`content-grid panel-${activePanel}`}>
+          <div className="primary-column">
+            {activePanel === "overview" && (
+              <WorkflowOverviewPanel
+                workflowStage={workflowStage}
+                isRecording={isRecording}
+                isCompleted={isCompleted}
+                memoryConfirmed={memoryConfirmed}
+                statusLabel={statusLabel}
+                durationSeconds={durationSeconds}
+                actionsCaptured={actionsCaptured}
+                currentSession={currentSession}
+                targetUrl={targetUrl}
+                onTargetUrlChange={setTargetUrl}
+                stageCopy={stageCopy}
+                workflowSteps={workflowSteps}
+                workflowStageIndex={workflowStageIndex}
+                loadingAction={loadingAction}
+                generatedArtifacts={generatedArtifacts}
+                panelRef={summaryRef}
+                onJumpTo={jumpTo}
+                onStartRecording={beginRecording}
+                onCheckStatus={checkStatus}
+                onStopRecording={handleStop}
+                onConfirmMemory={confirmMemory}
+                onOpenTrace={() => openPanel("trace")}
+                onQueueAutomation={queueAutomation}
+                onGenerateRunbook={handleGenerateRunbook}
+                onGenerateArtifact={generateArtifact}
+                onOpenPanel={openPanel}
+              />
+            )}
 
             {activePanel === "trace" && (
-              <aside
-                className={`inspector ${
-                  workflowStage === "prepare" ? "is-secondary" : ""
-                }`}
-              >
-                <div className="eyebrow">MEMORY DETAIL</div>
+              <TraceReviewPanel
+                workflowStage={workflowStage}
+                traceEvents={traceEvents}
+                selectedStep={selectedStep}
+                panelRef={timelineRef}
+                setSelectedStep={setSelectedStep}
+                onConfirmMemory={confirmMemory}
+                visibleEventClass={visibleEventClass}
+                visibleEventState={visibleEventState}
+              />
+            )}
 
-                {selectedEvent ? (
-  <div
-    className="inspector-content"
-    key={`${currentSession?.session_id}-${selectedEvent.step}`}
-  >
-    <div className="inspector-title">
-      <h2>{selectedEvent.action}</h2>
-      <span className="pill">Selected</span>
-    </div>
+            {activePanel === "runbook" && (
+              <RunbookPanel
+                workflowStage={workflowStage}
+                memoryConfirmed={memoryConfirmed}
+                runbookText={runbookText}
+                copied={copied}
+                panelRef={runbookRef}
+                onCopyRunbook={copyRunbook}
+                onConfirmRunBook={ConfirmRunBook}
+              />
+            )}
 
-    <p>
-      Event {selectedEvent.step} from session{" "}
-      {currentSession?.session_id}.
-    </p>
-
-    <div className="inspector-section">
-      <dl>
-        <dt>Time</dt>
-        <dd>{selectedEvent.time}</dd>
-
-        <dt>Selector</dt>
-        <dd>{selectedEvent.selector}</dd>
-
-        <dt>Result</dt>
-        <dd>{selectedEvent.result}</dd>
-
-        <dt>Target</dt>
-        <dd>{targetUrl}</dd>
-      </dl>
-    </div>
-  </div>
-) : (
-  <div className="inspector-content">
-    <div className="inspector-title">
-      <h2>
-        {traceLoading
-          ? "Loading workflow memory..."
-          : "No workflow memory"}
-      </h2>
-    </div>
-
-    <p>
-      {traceLoading
-        ? "Loading the selected project's recorded events."
-        : "This project has no confirmed recording details yet."}
-    </p>
-  </div>
-)}
-              </aside>
+            {activePanel === "automation" && (
+              <AutomationPanel
+                isCompleted={isCompleted}
+                actionsCaptured={actionsCaptured}
+                panelRef={automationRef}
+                onQueueAutomation={queueAutomation}
+                onCheckStatus={checkStatus}
+              />
             )}
           </div>
-        </section>
-      </section>
 
+          {activePanel === "trace" && (
+            <WorkflowInspector
+              selectedEvent={selectedEvent}
+              currentSessionId={currentSession?.session_id}
+              targetUrl={targetUrl}
+              traceLoading={traceLoading}
+            />
+          )}
+        </div>
+      }
+    >
       <div className="toast-stack" aria-live="polite" aria-atomic="true">
         {toasts.map((toast) => (
           <div className={toast.tone === "error" ? "toast error" : "toast"} key={toast.id}>
@@ -1446,7 +945,6 @@ const visibleEventClass = (event: TraceEventItem) => {
           </div>
         ))}
       </div>
-    </main>
-          
+    </WorkflowLayout>
   );
 }
