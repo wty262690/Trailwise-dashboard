@@ -1,7 +1,18 @@
+import {
+  startRecording,
+  stopRecording,
+  statusRecording,
+  generateTest,
+  deleteSession,
+  getRecordingLog,
+  waitForRecordingCompleted,
+  generateRunbook,
+  getGeneratedRunbook,
+  generateSkill,
+  replaySkillSession,
+} from "./api/trailwise";
 
-import { deleteSession, generateTest, startRecording, statusRecording, stopRecording } from "./api/trailwise";
 import MissionRail from "./component/MissionRail";
-import ProjectDelete from "./component/ProjectDelete";
 import TopBar from "./component/TopBar";
 import WorkspaceSidebar from "./component/WorkspaceSidebar";
 import { AnimatedTabs, type AnimatedTabItem } from "./component/ui/AnimatedTabs";
@@ -22,74 +33,11 @@ import {
   Route,
   Square,
 } from "lucide-react";
+import ProjectDelete from "./component/ProjectDelete";
 
 const icon18 = { size: 18, strokeWidth: 1.75 };
 const icon20 = { size: 20, strokeWidth: 1.75 };
 
-const runbookText = `1  # Expense approval workflow memory
-2  Initial state: browser is open at the expenses workspace.
-3  Step 1: Open the expenses list.
-4  Stage result: request table is visible.
-5  Step 2: Create an approval request and fill amount plus approver.
-6  Stage result: request form contains the required fields.
-7  Step 3: Submit and wait for success confirmation.`;
-
-const traceEvents = [
-  {
-    step: 1,
-    action: "Open http://localhost:5173/expenses",
-    state: "Done",
-    stateClass: "done",
-    time: "10:24:12",
-    selector: "location.href",
-    result: "expenses page loaded",
-  },
-  {
-    step: 2,
-    action: "Click Create request",
-    state: "Done",
-    stateClass: "done",
-    time: "10:24:18",
-    selector: "button[data-action=create]",
-    result: "request form opened",
-  },
-  {
-    step: 3,
-    action: "Enter amount and approver",
-    state: "Done",
-    stateClass: "done",
-    time: "10:24:25",
-    selector: "input[name=approval]",
-    result: "approval fields populated",
-  },
-  {
-    step: 4,
-    action: "Submit approval request",
-    state: "Done",
-    stateClass: "done",
-    time: "10:24:38",
-    selector: "button[type=submit]",
-    result: "waiting for success state",
-  },
-  {
-    step: 5,
-    action: "Wait for success confirmation",
-    state: "Pending",
-    stateClass: "pending",
-    time: "--:--",
-    selector: "[data-state=success]",
-    result: "success confirmation pending",
-  },
-  {
-    step: 6,
-    action: "Capture result state",
-    state: "Pending",
-    stateClass: "pending",
-    time: "--:--",
-    selector: "[data-capture=result]",
-    result: "result state not captured",
-  },
-];
 
 const recordingSeed = [
   {
@@ -144,37 +92,78 @@ function formatDuration(totalSeconds: number) {
 }
 
 export default function App() {
-    const [themeMode] = useState<ThemeMode>(() => {
-      try {
-        return localStorage.getItem("trailwise-theme") === "dark" ? "dark" : "light";
-      } catch {
-        return "light";
-      }
-    });
-  const [url] = useState("http://localhost:5173");
+  const [themeMode] = useState<ThemeMode>(() => {
+    try {
+      return localStorage.getItem("trailwise-theme") === "dark" ? "dark" : "light";
+    } catch {
+      return "light";
+    }
+  });
   const [, setMessage] = useState("");
   const [, setProjectName] = useState("CREATE YOUR PROJECT");
-  const [currentSession, setCurrentSession] = useState<{ session_id: string; status?: string } | null>(null);
-  const [sessions, setSessions] = useState<Array<{ session_id: string; status: string }>>([]);
+  type ProjectSession = {
+    session_id: string;
+    status: string;
+    target_url?: string;
+    generated_artifact_path?: string;
+    generated_runbook_path?: string;
+    generated_skill_path?: string;
+  };
+  const [currentSession, setCurrentSession] = useState<ProjectSession | null>(null);
+  const [sessions, setSessions] = useState<ProjectSession[]>([]);
 
-    const [activePanel, setActivePanel] = useState<Panel>("overview");
-    const [selectedRecordingId] = useState("expense");
-    const [selectedStep, setSelectedStep] = useState(4);
-    const [recordingPhase, setRecordingPhase] = useState<RecordingPhase>("ready");
-    const [durationSeconds, setDurationSeconds] = useState(recordingSeed[0].duration);
-    const [actionsCaptured, setActionsCaptured] = useState(recordingSeed[0].actions);
-    const [loadingAction, setLoadingAction] = useState<LoadingAction>(null);
-    const [generatedArtifacts, setGeneratedArtifacts] = useState({ test: false, runbook: false });
-    const [toasts, setToasts] = useState<Toast[]>([]);
-    const [copied, setCopied] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [targetUrl, setTargetUrl] = useState("http://localhost:5173");
-    const summaryRef = useRef<HTMLElement>(null);
-    const timelineRef = useRef<HTMLElement>(null);
-    const runbookRef = useRef<HTMLElement>(null);
-    const automationRef = useRef<HTMLElement>(null);
-    const [memoryConfirmed, setMemoryConfirmed] = useState(false);
-  
+  const [activePanel, setActivePanel] = useState<Panel>("overview");
+  const [selectedRecordingId] = useState("expense");
+  const [selectedStep, setSelectedStep] = useState(4);
+  const [recordingPhase, setRecordingPhase] = useState<RecordingPhase>("ready");
+  const [durationSeconds, setDurationSeconds] = useState(recordingSeed[0].duration);
+  const [actionsCaptured, setActionsCaptured] = useState(recordingSeed[0].actions);
+  const [loadingAction, setLoadingAction] = useState<LoadingAction>(null);
+  const [generatedArtifacts, setGeneratedArtifacts] = useState({ test: false, runbook: false });
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [copied, setCopied] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [targetUrl, setTargetUrl] = useState("http://localhost:5173/expense-flow.html");
+  const summaryRef = useRef<HTMLElement>(null);
+  const timelineRef = useRef<HTMLElement>(null);
+  const runbookRef = useRef<HTMLElement>(null);
+  const automationRef = useRef<HTMLElement>(null);
+  const [memoryConfirmed, setMemoryConfirmed] = useState(false);
+  const [runbookText, setRunbookText] = useState("No runbook generated yet");
+  type TraceEventItem = {
+    step: number;
+    action: string;
+    state: string;
+    stateClass: string;
+    time: string;
+    selector: string;
+    result: string;
+  };
+
+  function transformTraceEvents(events: any[]): TraceEventItem[] {
+    return events
+      .filter(
+        (event) =>
+          event.type !== "session_started" &&
+          event.type !== "session_stopped" &&
+          event.type !== "session_cancelled",
+      )
+      .map((event, index) => ({
+        step: index + 1,
+        action: buildAction(event),
+        state: "Done",
+        stateClass: "done",
+        time: formatTime(event.ts),
+        selector: event.selector ?? event.url ?? "-",
+        result: buildResult(event),
+      }));
+  }
+
+  const [traceEvents, setTraceEvents] = useState<TraceEventItem[]>([]);
+  const [traceLoading, setTraceLoading] = useState(false);
+  const traceRequestRef = useRef(0);
+
+
   
   useEffect(() => {
     document.documentElement.dataset.theme = themeMode;
@@ -187,11 +176,13 @@ export default function App() {
 
   const selectedRecording =
     recordingSeed.find((recording) => recording.id === selectedRecordingId) ?? recordingSeed[0];
-  const selectedEvent = traceEvents.find((event) => event.step === selectedStep) ?? traceEvents[3];
+  const selectedEvent =
+    traceEvents.find((event) => event.step === selectedStep) ??
+    traceEvents[0] ??
+    null;
   const sessionStatus = currentSession?.status?.toLowerCase() ?? "";
-  const isSessionPending = sessionStatus.includes("pending");
   const isSessionRecording = sessionStatus.includes("recording");
-  const isSessionCompleted = /completed|finished|recorded|stop|stopped|stopping/.test(sessionStatus);
+  const isSessionCompleted =/completed|finished|recorded|stopped/.test(sessionStatus);
   const isRecording = sessionStatus ? isSessionRecording : recordingPhase === "recording";
   const isCompleted = sessionStatus ? isSessionCompleted : recordingPhase === "completed";
   const statusLabel = currentSession?.status
@@ -201,29 +192,21 @@ export default function App() {
       : recordingPhase === "completed"
         ? "Completed"
         : "Ready";
-  const workflowStage: WorkflowStage = sessionStatus
-    ? sessionStatus.includes("pending")
-      ? "record"
-      : sessionStatus.includes("recording")
-        ? "record"
-        : sessionStatus.includes("stop") || sessionStatus.includes("stopped") || sessionStatus.includes("recorded") || sessionStatus.includes("finished") || sessionStatus.includes("completed")
-          ? "review"
-          : sessionStatus.includes("generated") || sessionStatus.includes("generate") || sessionStatus.includes("saved")
-            ? "generate"
-            : memoryConfirmed
-              ? "generate"
-              : isCompleted
-                ? "review"
-                : isRecording
-                  ? "record"
-                  : "prepare"
-    : isRecording
-      ? "record"
-      : memoryConfirmed
-        ? "generate"
-        : isCompleted
-          ? "review"
-          : "prepare";
+  
+const workflowStage: WorkflowStage =
+  memoryConfirmed
+    ? "generate"
+    : sessionStatus.includes("pending")
+    ? "record"
+    : sessionStatus.includes("recording")
+    ? "record"
+    : sessionStatus.includes("stopped") ||
+      sessionStatus.includes("recorded") ||
+      sessionStatus.includes("finished") ||
+      sessionStatus.includes("completed")
+    ? "review"
+    : "prepare";
+
     const stageCopy: Record<WorkflowStage, { eyebrow: string; title: string; body: string; status: string }> = {
       prepare: {
         eyebrow: "Step 1 / Record",
@@ -297,15 +280,32 @@ export default function App() {
       }, tone === "error" ? 3200 : 1800);
     };
   
-  const openProjectSession = async (session: { session_id: string; status: string }) => {
+  const openProjectSession = async (session: {
+    session_id: string;
+    status: string;
+  }) => {
+    // Clear the previous project before loading this one.
+    setTraceEvents([]);
+    setSelectedStep(0);
+    setMemoryConfirmed(false);
+
     try {
       const result = await statusRecording(session.session_id);
       const statusText = result?.text ?? "";
-      const matched = statusText.match(/status[:\s]+([\w\s]+)/i) || statusText.match(/(pending|running|completed|ready|recording|stopped|failed|cancelled|finished|generated|generate|recorded)/i);
+
+      const matched =
+        statusText.match(/Recording status:\s*(\S+)/i) ||
+        statusText.match(
+          /(pending|recording|completed|ready|stopped|failed|cancelled|finished|generated|recorded)/i,
+        );
+
       const freshStatus = (matched?.[1] ?? session.status).trim();
       const normalizedStatus = freshStatus.toLowerCase();
-      const isGenerated = /generated|generate|saved/.test(normalizedStatus);
-      const isReview = /finished|recorded|completed|stop|stopped|stopping/.test(normalizedStatus);
+
+      const isGenerated = /generated|saved/.test(normalizedStatus);
+      const isReview = /finished|recorded|completed|stopped/.test(
+        normalizedStatus,
+      );
       const isRecordPhase = /pending|recording|ready/.test(normalizedStatus);
 
       if (isGenerated) {
@@ -315,36 +315,248 @@ export default function App() {
         setRecordingPhase("completed");
         setMemoryConfirmed(false);
       } else if (isRecordPhase) {
-        setRecordingPhase(normalizedStatus.includes("recording") ? "recording" : "ready");
+        setRecordingPhase(
+          normalizedStatus.includes("recording")
+            ? "recording"
+            : "ready",
+        );
         setMemoryConfirmed(false);
       }
 
-      const panelForStatus: Panel = normalizedStatus.includes("pending")
-        ? "overview"
-        : normalizedStatus.includes("recording")
-          ? "overview"
-          : normalizedStatus.includes("stop") || normalizedStatus.includes("stopping")
-            ? "trace"
-            : normalizedStatus.includes("finished") || normalizedStatus.includes("recorded") || normalizedStatus.includes("completed")
-              ? "trace"
-              : normalizedStatus.includes("generated") || normalizedStatus.includes("generate") || normalizedStatus.includes("saved")
-                ? "automation"
-                : "overview";
+      const selectedSession = {
+        ...session,
+        status: freshStatus,
+      };
 
-      setCurrentSession({ ...session, status: freshStatus });
+      // Set the current project before loading its details.
+      setCurrentSession(selectedSession);
       setProjectName(session.session_id);
-      setActivePanel(panelForStatus);
       setSidebarOpen(false);
-      showToast(`Loaded ${session.session_id} (${freshStatus}) - opened ${panelForStatus}`);
+
+      if (isReview || isGenerated) {
+        await loadRecordingDetails(session.session_id);
+        setActivePanel("trace");
+      } else {
+        // An uncompleted project should never show old trace data.
+        setTraceEvents([]);
+        setSelectedStep(0);
+        setActivePanel("overview");
+      }
+
+      showToast(`Loaded ${session.session_id} (${freshStatus})`);
       await loadSessions();
     } catch (error) {
-      console.error("Failed to fetch session status", error);
+      console.error("Failed to open project:", error);
+
       setCurrentSession(session);
+      setTraceEvents([]);
+      setSelectedStep(0);
+      setMemoryConfirmed(false);
       setActivePanel("overview");
-      showToast(`Loaded ${session.session_id} (status unknown)`, "error");
+
+      showToast(
+        `Loaded ${session.session_id}, but its memory could not be loaded`,
+        "error",
+      );
     }
   };
   
+
+  const handleLoadRecordingDetails = async () => {
+    if (!currentSession) return;
+
+    try {
+      const log = await getRecordingLog(currentSession.session_id);
+      console.log("Full recording:", log);
+
+      if (!log.events?.length) {
+        console.warn("No recorded events were found.");
+        showToast("Recording completed, but no browser events were captured", "error");
+        return;
+      }
+
+      else{
+          const uiEvents = log.events.map((event) => ({
+            step: event.seq,
+            action: buildAction(event),
+            state: "Done",
+            stateClass: "done",
+            time: formatTime(event.ts),
+            selector: event.selector ?? event.url ?? "-",
+            result: buildResult(event),
+          }));
+
+          setTraceEvents(uiEvents);
+          if (uiEvents.length > 0) {
+            setSelectedStep(uiEvents[0].step);
+          }
+      }
+
+      showToast(`Loaded ${log.events.length} recorded actions`);
+    } catch (error) {
+      console.error("Failed to load recording details:", error);
+
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to load recording details",
+        "error",
+      );
+    }
+  };
+
+const loadRecordingDetails = async (
+  sessionId: string,
+): Promise<TraceEventItem[]> => {
+  const requestId = ++traceRequestRef.current;
+
+  setTraceEvents([]);
+  setSelectedStep(0);
+  setTraceLoading(true);
+
+  try {
+    const log = await getRecordingLog(sessionId);
+
+    if (requestId !== traceRequestRef.current) {
+      return [];
+    }
+
+    const events = transformTraceEvents(log.events ?? []);
+
+    setTraceEvents(events);
+
+    if (events.length > 0) {
+      setSelectedStep(events[0].step);
+    }
+
+    return events;
+  } catch (error) {
+    if (requestId === traceRequestRef.current) {
+      setTraceEvents([]);
+      setSelectedStep(0);
+    }
+
+    throw error;
+  } finally {
+    if (requestId === traceRequestRef.current) {
+      setTraceLoading(false);
+    }
+  }
+};
+
+  function buildAction(event) {
+    switch (event.type) {
+      case "session_started":
+        return `Start recording`;
+
+      case "navigation":
+        return `Navigate to ${event.url}`;
+
+      case "click":
+        return `Click ${event.text || event.selector}`;
+
+      case "input":
+        return `Input ${event.label || event.selector}`;
+
+      case "submit":
+        return "Submit form";
+
+      case "session_stopped":
+        return "Stop recording";
+
+      default:
+        return event.type;
+    }
+  }
+  function buildResult(event) {
+    switch (event.type) {
+      case "navigation":
+        return "Page loaded";
+
+      case "click":
+        return event.text || "Clicked element";
+
+      case "input":
+        return event.value || "Input entered";
+
+      case "submit":
+        return "Form submitted";
+
+      case "session_started":
+        return "Recording started";
+
+      case "session_stopped":
+        return "Recording finished";
+
+      default:
+        return "-";
+    }
+  }
+
+  function formatTime(ms) {
+    if (ms == null) return "--:--";
+
+    const seconds = Math.floor(ms / 1000);
+
+    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const s = String(seconds % 60).padStart(2, "0");
+
+    return `${m}:${s}`;
+  }
+
+
+  const handleGenerateRunbook = async () => {
+    const sessionId = currentSession?.session_id;
+
+    if (!sessionId) {
+      showToast(
+        "No recording session is selected",
+        "error",
+      );
+      return;
+    }
+
+    try {
+      setLoadingAction("runbook");
+
+      console.log(
+        "Generating runbook for session:",
+        sessionId,
+      );
+
+      await generateRunbook(sessionId);
+
+      const runbook = await getGeneratedRunbook(
+        sessionId,
+      );
+
+      setRunbookText(runbook.content ?? "");
+
+      setGeneratedArtifacts((current) => ({
+        ...current,
+        runbook: true,
+      }));
+
+      setActivePanel("runbook");
+
+      showToast("Runbook generated successfully");
+    } catch (error) {
+      console.error(
+        "Runbook generation failed:",
+        error,
+      );
+
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Runbook generation failed",
+        "error",
+      );
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   const jumpTo = (panel: Panel) => {
     const target = {
       overview: summaryRef,
@@ -357,18 +569,125 @@ export default function App() {
     window.setTimeout(() => target.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   };
 
-    const confirmMemory = () => {
-    if (!isCompleted) {
 
-      showToast("Complete the recording before confirming memory");
+  const confirmMemory = async () => {
+    const sessionId = currentSession?.session_id;
+
+    if (!sessionId) {
+      showToast("No project is selected", "error");
       return;
     }
 
-    setMemoryConfirmed(true);
-    generateTest(currentSession?.session_id);
-    jumpTo("overview");
-    showToast("Workflow memory saved");
-    };
+    if (!isCompleted) {
+      showToast(
+        "Complete the recording before confirming memory",
+        "error",
+      );
+      return;
+    }
+
+    try {
+      setLoadingAction("test");
+
+      const events = await loadRecordingDetails(sessionId);
+
+      if (events.length === 0) {
+        throw new Error(
+          "Cannot confirm memory because no browser actions were recorded",
+        );
+      }
+
+      let artifactPath =
+        currentSession.generated_artifact_path;
+
+      if (!artifactPath) {
+        const testResult = await generateTest(sessionId);
+        artifactPath = testResult.artifactPath;
+      }
+
+      setCurrentSession((current) =>
+        current?.session_id === sessionId
+          ? {
+              ...current,
+              generated_artifact_path: artifactPath,
+            }
+          : current,
+      );
+
+      setMemoryConfirmed(true);
+      setActionsCaptured(events.length);
+      setDurationSeconds(Math.max(...events.map((e) => parseInt(e.time.split(":")[0]) * 60 + parseInt(e.time.split(":")[1]))));
+      setSelectedStep(1);
+      setGeneratedArtifacts((current) => ({
+        ...current,
+        test: true,
+      }));
+
+      showToast("Workflow memory saved");
+
+      try {
+        setLoadingAction("runbook");
+
+        const runbookResult =
+          await generateRunbook(sessionId);
+
+        const generatedRunbook =
+          await getGeneratedRunbook(sessionId);
+
+        setRunbookText(
+          generatedRunbook.content ??
+            "Generated runbook is empty.",
+        );
+
+        setCurrentSession((current) =>
+          current?.session_id === sessionId
+            ? {
+                ...current,
+                generated_runbook_path:
+                  runbookResult.artifactPath,
+              }
+            : current,
+        );
+
+        setGeneratedArtifacts((current) => ({
+          ...current,
+          runbook: true,
+        }));
+
+        setActivePanel("runbook");
+        showToast("Runbook generated successfully");
+      } catch (runbookError) {
+        console.error(
+          "Runbook generation failed:",
+          runbookError,
+        );
+
+        setActivePanel("trace");
+
+        showToast(
+          runbookError instanceof Error
+            ? `Memory saved, but runbook failed: ${runbookError.message}`
+            : "Memory saved, but runbook generation failed",
+          "error",
+        );
+      }
+
+      await loadSessions();
+    } catch (error) {
+      console.error("Memory confirmation failed:", error);
+
+      setMemoryConfirmed(false);
+
+      showToast(
+        error instanceof Error
+          ? error.message
+          : "Memory confirmation failed",
+        "error",
+      );
+    } finally {
+      setLoadingAction(null);
+    }
+  };
   
     const checkStatus = () => {
       showToast(`${statusLabel}: ${formatDuration(durationSeconds)} / ${actionsCaptured} actions captured`);
@@ -412,34 +731,29 @@ export default function App() {
   };
 
   async function loadSessions() {
-    const res = await fetch("http://localhost:3000/dev/sessions");
+    const res = await fetch(
+      "http://localhost:3000/dev/sessions",
+    );
+
+    if (!res.ok) {
+      throw new Error(`Failed to load sessions: ${res.status}`);
+    }
+
     const data = await res.json();
 
-    setSessions(data.sessions.filter((s: { status: string }) => s.status !== "deleted"));
+    setSessions(
+      data.sessions.filter(
+        (session: ProjectSession) =>
+          session.status !== "deleted",
+      ),
+    );
   }
-
-  const handleDeleteProject = async (session: { session_id: string }) => {
-    try {
-      await deleteSession(session.session_id);
-      if (currentSession?.session_id === session.session_id) {
-        setCurrentSession(null);
-        setRecordingPhase("ready");
-        setMemoryConfirmed(false);
-      }
-      await loadSessions();
-      jumpTo("overview");
-      showToast(`Deleted ${session.session_id}`);
-    } catch (error) {
-      console.error("Delete failed", error);
-      showToast("Delete failed", "error");
-    }
-  };
 
 
    const beginRecording = async () => {
     if (isRecording) return;
     try {
-          const result = await startRecording(url);
+          const result = await startRecording(targetUrl);
     
           console.log(result);
     
@@ -448,7 +762,7 @@ export default function App() {
           await loadSessions();
     
           const match = result.text?.match(/Session:\s*(\S+)/);
-          const sessionId = match?.[1];
+          const sessionId = result.session_id ?? match?.[1];
     
           if (sessionId) {
             const res = await fetch("http://localhost:3000/dev/sessions");
@@ -460,58 +774,97 @@ export default function App() {
             if (newSession) {
               setCurrentSession(newSession);
               setProjectName(newSession.session_id);
-              const newStatus = newSession.status?.toLowerCase() ?? "";
-              setRecordingPhase(newStatus.includes("recording") ? "recording" : "ready");
-              showToast(
-                newStatus.includes("recording")
-                  ? "Recording started"
-                  : "Session created. Confirm it in the Mac helper to start recording."
-              );
             }
 
+            setRecordingPhase("recording");
             setDurationSeconds(0);
             setActionsCaptured(0);
             setSelectedStep(1);
             jumpTo("overview");
+            showToast("Recording started");
           }
     
           if (result.text?.[0] === "R") {
-            window.open(url, "_blank");
+            window.open(targetUrl, "_blank");
           }
         } catch (err) {
+
           console.error(err);
           setMessage("Start failed");
         }
   };
 
-  const handleStop = async () => {
+const handleStop = async () => {
+  if (!currentSession) return;
+
+  const sessionId = currentSession.session_id;
+
+  try {
+    setMessage("Stopping recording...");
+
+    const stopResult = await stopRecording(sessionId);
+    const completedResult = await waitForRecordingCompleted(sessionId);
+
+    console.log({
+      stopResult,
+      completedResult,
+    });
+
+    const res = await fetch("http://localhost:3000/dev/sessions");
+
+    if (!res.ok) {
+      throw new Error(`Failed to load sessions: ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    const updatedSession = data.sessions.find(
+      (session: { session_id: string }) =>
+        session.session_id === sessionId,
+    );
+
+    setCurrentSession(
+      updatedSession ?? {
+        ...currentSession,
+        status: "completed",
+      },
+    );
+
+    setMessage(completedResult.text ?? "Recording completed");
+    setRecordingPhase("completed");
+    setSelectedStep(4);
+
+    jumpTo("overview");
+    showToast("Recording completed");
+
+    await loadSessions();
+  } catch (error) {
+    console.error("Stop failed:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Unknown stop error";
+
+    setMessage(`Stop failed: ${message}`);
+    showToast(message, "error");
+  }
+};
+
+  const handleDelete= async() => {
     if (!currentSession) return;
-    if (isSessionPending) {
-      showToast("Confirm the recording in the Mac helper before stopping", "error");
-      return;
-    }
-    if (!isRecording) {
-      showToast("Recording has not started yet", "error");
-      return;
-    }
     try {
-        const result = await stopRecording(currentSession.session_id);
-
-        console.log(result);
-        setMessage(result.text ?? JSON.stringify(result));
-        setRecordingPhase("completed");
-        setCurrentSession((session) => (session ? { ...session, status: "stopping" } : session));
-        setSelectedStep(4);
-        jumpTo("trace");
-        showToast("Recording completed");
-        await loadSessions();
-      } catch (err) {
+      const result = await deleteSession(currentSession.session_id);
+      console.log(result);
+      setCurrentSession(null);
+      setRecordingPhase("ready");      // <-- important
+      setMemoryConfirmed(false);       // <-- important
+      setSelectedStep(1);              // optional
+      setActivePanel("overview"); 
+    
+    }catch (err) {
         console.error(err);
-        setMessage("Stop failed");
-      }
-  };
-
-
+        setMessage("Stop failed");      
+    }
+  }
 
     const openPanel = (panel: Panel) => {
     if (panel === "trace" && !isCompleted) {
@@ -526,28 +879,96 @@ export default function App() {
 
     jumpTo(panel);
   };
+  const ConfirmRunBook = async () => {
+    jumpTo("automation");
+    return;
+  }
+const queueAutomation = async () => {
+  const sessionId = currentSession?.session_id;
 
-    const queueAutomation = () => {
-    if (!isCompleted || !memoryConfirmed) {
-      showToast("Confirm workflow memory before starting the robot run");
-      return;
+  if (!sessionId) {
+    showToast("No project is selected", "error");
+    return;
+  }
+
+  if (!isCompleted || !memoryConfirmed) {
+    showToast(
+      "Confirm workflow memory before starting the robot run",
+      "error",
+    );
+    return;
+  }
+
+  try {
+    if (!currentSession.generated_skill_path) {
+      const skill = await generateSkill(sessionId);
+
+      setCurrentSession((current) =>
+        current?.session_id === sessionId
+          ? {
+              ...current,
+              generated_skill_path: skill.artifactPath,
+            }
+          : current,
+      );
     }
 
-    showToast("Robot run queued from workflow memory");
-  };
-  const visibleEventState = (event: (typeof traceEvents)[number]) => {
-    if (selectedStep === event.step) return "Selected";
-    if (isRecording && event.step > Math.max(1, Math.min(actionsCaptured, 6))) return "Pending";
-    if (isCompleted && event.step <= 6) return "Done";
-    return event.state;
-  };
-    const visibleEventClass = (event: (typeof traceEvents)[number]) => {
-    if (selectedStep === event.step) return "";
-    if (visibleEventState(event) === "Done") return "done";
-    if (visibleEventState(event) === "Pending") return "pending";
-    return event.stateClass;
-  };
+    showToast("Robot run started");
 
+    const result = await replaySkillSession(sessionId, {
+      headless: false,
+    });
+
+    console.log("Replay result:", result);
+
+    showToast(
+      `Robot completed ${result.result?.events_replayed ?? 0} actions`,
+    );
+  } catch (error) {
+    showToast(
+      error instanceof Error
+        ? error.message
+        : "Robot run failed",
+      "error",
+    );
+  }
+};
+const visibleEventState = (event: TraceEventItem) => {
+  if (selectedStep === event.step) {
+    return "Selected";
+  }
+
+  if (
+    isRecording &&
+    event.step > Math.max(1, Math.min(actionsCaptured, traceEvents.length))
+  ) {
+    return "Pending";
+  }
+
+  if (isCompleted) {
+    return "Done";
+  }
+
+  return event.state;
+};
+
+const visibleEventClass = (event: TraceEventItem) => {
+  if (selectedStep === event.step) {
+    return "";
+  }
+
+  const state = visibleEventState(event);
+
+  if (state === "Done") {
+    return "done";
+  }
+
+  if (state === "Pending") {
+    return "pending";
+  }
+
+  return event.stateClass;
+};
   return (
     <main className="screen-shell" aria-label="Trailwise 09 console preview">
       <section className={`console-screen ${sidebarOpen ? "sidebar-open" : ""}`}>
@@ -599,7 +1020,10 @@ export default function App() {
               <span>Session status: {currentSession.status ?? "Unknown"}</span>
             </div>
           )}
-          <ProjectDelete session={currentSession} onDelete={handleDeleteProject} />
+          <ProjectDelete
+            session={currentSession}
+            onDelete={handleDelete}
+          ></ProjectDelete>
           <AnimatedTabs activeId={activePanel} items={mainTabs} onChange={(panel) => openPanel(panel as Panel)} />
 
 
@@ -777,13 +1201,29 @@ export default function App() {
                             <MovingBorderButton className="btn dark primary-action" onClick={queueAutomation}>
                               Run robot <Bot {...icon18} aria-hidden="true" />
                             </MovingBorderButton>
-                            <button
-                              className={loadingAction === "runbook" ? "btn light loading" : "btn light"}
-                              disabled={loadingAction !== null}
-                              onClick={() => (generatedArtifacts.runbook ? openPanel("runbook") : generateArtifact("runbook"))}
-                            >
-                              {generatedArtifacts.runbook ? "Open output" : "Generate Runbook"} <BookOpen {...icon18} aria-hidden="true" />
-                            </button>
+                          <button
+                            className={
+                              loadingAction === "runbook"
+                                ? "btn light loading"
+                                : "btn light"
+                            }
+                            disabled={loadingAction !== null}
+                            onClick={() => {
+                              if (generatedArtifacts.runbook) {
+                                openPanel("runbook");
+                              } else {
+                                void handleGenerateRunbook();
+                              }
+                            }}
+                          >
+                            {loadingAction === "runbook"
+                              ? "Generating..."
+                              : generatedArtifacts.runbook
+                                ? "Open output"
+                                : "Generate Runbook"}
+
+                            <BookOpen {...icon18} aria-hidden="true" />
+                          </button>
                             <button
                               className={loadingAction === "test" ? "btn light loading" : "btn light"}
                               disabled={loadingAction !== null}
@@ -849,6 +1289,9 @@ export default function App() {
                           <span>{event.time}</span>
                         </button>
                       ))}
+                      <MovingBorderButton className="btn dark primary-action" onClick={confirmMemory}>
+                        Confirm memory <CircleDot {...icon18} aria-hidden="true" />
+                      </MovingBorderButton>
                     </div>
                     <div className="flow-map">
                       <span>Stage map</span>
@@ -857,37 +1300,6 @@ export default function App() {
                       <em className={selectedStep === 4 ? "active" : ""}>Submit</em>
                       <em className={selectedStep >= 5 ? "active" : ""}>Verify</em>
                     </div>
-                  </div>
-                  <div className="trace-next-step">
-                    <div>
-                      <span>NEXT STEP</span>
-                      <h3>{memoryConfirmed ? "Generate outputs from workflow memory" : "Confirm the memory summary first"}</h3>
-                      <p>
-                        {memoryConfirmed
-                          ? "Create a Runbook that can guide people or feed automation."
-                          : "Return to the guided flow and save the structured workflow before generating outputs."}
-                      </p>
-                    </div>
-                    <button
-                      className={loadingAction === "runbook" ? "btn dark loading" : "btn dark"}
-                      disabled={loadingAction !== null}
-                      onClick={() =>
-                        memoryConfirmed
-                          ? generatedArtifacts.runbook
-                            ? openPanel("runbook")
-                            : generateArtifact("runbook")
-                          : confirmMemory()
-                      }
-                    >
-                      {loadingAction === "runbook"
-                        ? "Generating"
-                        : generatedArtifacts.runbook
-                          ? "Open Runbook"
-                          : memoryConfirmed
-                            ? "Generate Runbook"
-                            : "Confirm memory"}{" "}
-                      <BookOpen {...icon18} aria-hidden="true" />
-                    </button>
                   </div>
                 </article>
               )}
@@ -916,6 +1328,9 @@ export default function App() {
                     </div>
                     <pre>{runbookText}</pre>
                   </div>
+                  <MovingBorderButton className="btn dark primary-action" onClick={ConfirmRunBook}>
+                    Confirm Run Book <Bot {...icon18} aria-hidden="true" />
+                  </MovingBorderButton>
                 </article>
               )}
 
@@ -963,37 +1378,62 @@ export default function App() {
             </div>
 
             {activePanel === "trace" && (
-            <aside className={`inspector ${workflowStage === "prepare" ? "is-secondary" : ""}`}>
-              <div className="eyebrow">MEMORY DETAIL</div>
-              <div className="inspector-content" key={`${selectedRecordingId}-${selectedStep}`}>
-                <div className="inspector-title">
-                  <h2>{selectedEvent.action}</h2>
-                  <span className="pill">Selected</span>
-                </div>
-                <p>Event {selectedEvent.step} from the selected {selectedRecording.title} recording.</p>
+              <aside
+                className={`inspector ${
+                  workflowStage === "prepare" ? "is-secondary" : ""
+                }`}
+              >
+                <div className="eyebrow">MEMORY DETAIL</div>
 
-                <div className="inspector-section">
-                  <div className="section-head">
-                    <h3>Local handoff</h3>
-                    <span className={isRecording ? "pill red" : "pill amber"}>
-                      {isRecording ? "Recording" : "Awaiting"}
-                    </span>
-                  </div>
-                  <dl>
-                    <dt>Device</dt>
-                    <dd>Sun Junxiao MacBook Pro</dd>
-                    <dt>Target</dt>
-                    <dd>{targetUrl}</dd>
-                    <dt>Session</dt>
-                    <dd>sess_mr0re8sa_8u0xr4</dd>
-                  </dl>
-                </div>
-              </div>
+                {selectedEvent ? (
+  <div
+    className="inspector-content"
+    key={`${currentSession?.session_id}-${selectedEvent.step}`}
+  >
+    <div className="inspector-title">
+      <h2>{selectedEvent.action}</h2>
+      <span className="pill">Selected</span>
+    </div>
 
-              <button className="btn dark block" disabled={isRecording} onClick={beginRecording}>
-                Confirm locally on the Mac <Play {...icon18} aria-hidden="true" />
-              </button>
-            </aside>
+    <p>
+      Event {selectedEvent.step} from session{" "}
+      {currentSession?.session_id}.
+    </p>
+
+    <div className="inspector-section">
+      <dl>
+        <dt>Time</dt>
+        <dd>{selectedEvent.time}</dd>
+
+        <dt>Selector</dt>
+        <dd>{selectedEvent.selector}</dd>
+
+        <dt>Result</dt>
+        <dd>{selectedEvent.result}</dd>
+
+        <dt>Target</dt>
+        <dd>{targetUrl}</dd>
+      </dl>
+    </div>
+  </div>
+) : (
+  <div className="inspector-content">
+    <div className="inspector-title">
+      <h2>
+        {traceLoading
+          ? "Loading workflow memory..."
+          : "No workflow memory"}
+      </h2>
+    </div>
+
+    <p>
+      {traceLoading
+        ? "Loading the selected project's recorded events."
+        : "This project has no confirmed recording details yet."}
+    </p>
+  </div>
+)}
+              </aside>
             )}
           </div>
         </section>
