@@ -13,7 +13,7 @@ import {
   replaySkillSession,
 } from "../api/trailwise";
 
-import MissionRail from "../component/MissionRail";
+//import MissionRail from "../component/MissionRail";
 import TopBar from "../component/TopBar";
 import WorkspaceSidebar from "../component/WorkspaceSidebar";
 import { AnimatedTabs, type AnimatedTabItem } from "../component/ui/AnimatedTabs";
@@ -537,14 +537,14 @@ const loadRecordingDetails = async (
       showToast(`${statusLabel}: ${formatDuration(durationSeconds)} / ${actionsCaptured} actions captured`);
     };
   
-    const openWorkspace = () => {
+    /*const openWorkspace = () => {
       setSidebarOpen(false);
       jumpTo("overview");
     };
   
       const openSettings = () => {
       showToast("Settings are not connected in this prototype");
-    };
+    };*/
   
     const generateArtifact = (kind: Exclude<LoadingAction, null>) => {
       if (!isCompleted || loadingAction) return;
@@ -825,10 +825,10 @@ const visibleEventClass = (event: TraceEventItem) => {
             onToggleSidebar={toggleSidebar}
             onJumpTo={jumpTo}
             onOpenSettings={openSettings}
-          />*/}
+          />
 
           <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
-
+          */}
           <button
             className="sidebar-backdrop"
             aria-label="Close workspace sidebar"
