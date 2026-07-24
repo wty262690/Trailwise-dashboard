@@ -1,4 +1,11 @@
 export declare function startRecording(url: string): Promise<any>;
 export declare function stopRecording(sessionId?: string): Promise<any>;
 export declare function statusRecording(sessionId?: string): Promise<any>;
+export declare function waitForRecordingCompleted(sessionId?: string): Promise<any>;
+export declare function getRecordingLog(sessionId?: string): Promise<any>;
+export declare function generateRunbook(sessionId?: string): Promise<any>;
+export declare function getGeneratedRunbook(sessionId?: string): Promise<any>;
+export declare function generateSkill(id?: string): Promise<any>;
+export declare function generateTest(id?: string): Promise<any>;
 export declare function deleteSession(id: string): Promise<any>;
+export declare function replaySkillSession(sessionId: string, options: any): Promise<any>;
