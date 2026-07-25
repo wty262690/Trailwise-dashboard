@@ -14,7 +14,6 @@ import {
 } from "../api/trailwise";
 
 //import MissionRail from "../component/MissionRail";
-import TopBar from "../component/TopBar";
 import WorkspaceSidebar from "../component/WorkspaceSidebar";
 import { AnimatedTabs, type AnimatedTabItem } from "../component/ui/AnimatedTabs";
 import { GridBackground } from "../component/ui/GridBackground";
@@ -558,10 +557,6 @@ const loadRecordingDetails = async (
       }, 900);
     };
 
-  const toggleSidebar = () => {
-    setSidebarOpen((current) => !current);
-  };
-
   const copyRunbook = async () => {
     try {
       await navigator.clipboard.writeText(runbookText);
@@ -845,7 +840,7 @@ const visibleEventClass = (event: TraceEventItem) => {
       }
       header={
         <>
-          <GridBackground className="workspace-grid-background" />
+          <GridBackground className=" workspace-grid-background" />
           <WorkflowHeader
             title={`Record ${currentSession?.session_id || "New"} workflow`}
             statusLabel={statusLabel}

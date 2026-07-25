@@ -12,14 +12,11 @@ export default function ProjectCard({
 
     return(
         <button
-            className={`project-row ${
-                selected ? "active" : ""
-            }`}
+            className={`project-row w-full rounded-xl border px-4 py-3 text-left transition ${selected ? "active border-sky-400/40 bg-sky-500/10" : "border-transparent bg-transparent hover:bg-white/5"}`}
             onClick={onOpen}
         >
-            <strong>{session.session_id}</strong>
-
-            <span style={{ textAlign: "left" }}>{session.status}</span>
+            <strong className="block text-[12px] font-semibold text-slate-100">{session.session_id}</strong>
+            <span className="mt-1 block text-left text-[11px] text-slate-400">{session.status}</span>
         </button>
     )
 

@@ -80,6 +80,7 @@ h1 {
   font-size: 4.5vw;
   letter-spacing: var(--letter-spacing-title);
   margin: 32px 0;
+  line-height: 1;
   @media (max-width: 1024px) {
     font-size: 36px;
     margin: 20px 0;
