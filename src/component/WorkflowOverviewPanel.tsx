@@ -70,13 +70,13 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
   } = props;
 
   return (
-    <article className={`summary-card relative isolate min-h-[328px] overflow-hidden rounded-[14px] border border-sky-200/60 bg-white/70 p-8 shadow-[0_28px_84px_rgba(18,31,51,0.1)] ${isRecording ? "is-live" : ""}`} ref={panelRef}>
+    <article className={`summary-card relative isolate min-h-[328px] overflow-hidden rounded-[50px] p-8 shadow-[0_28px_84px_rgba(18,31,51,0.1)] ${isRecording ? "is-live" : ""}`} ref={panelRef}>
       <div className="phase-strip grid gap-3 md:grid-cols-4" aria-label="Workflow progress">
         {workflowSteps.map((step, index) => {
           const stepState = index < workflowStageIndex ? "complete" : index === workflowStageIndex ? "active" : "future";
           return (
             <button
-              className={`phase-step ${stepState} flex items-center gap-3 rounded-lg border border-slate-200/80 bg-white/70 p-3 text-left"`}
+              className={`phase-step ${stepState} grid items-center gap-3 rounded-lg border border-slate-200/80 bg-white/50 p-3 text-left"`}
               disabled={stepState === "future"}
               key={step.id}
               onClick={() => {

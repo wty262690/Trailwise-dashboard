@@ -813,17 +813,6 @@ const visibleEventClass = (event: TraceEventItem) => {
       sidebarOpen={sidebarOpen}
       sidebar={
         <>
-          {/*<MissionRail
-            activePanel={activePanel}
-            sidebarOpen={sidebarOpen}
-            onOpenWorkspace={openWorkspace}
-            onToggleSidebar={toggleSidebar}
-            onJumpTo={jumpTo}
-            onOpenSettings={openSettings}
-          />
-
-          <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
-          */}
           <button
             className="sidebar-backdrop"
             aria-label="Close workspace sidebar"
@@ -842,14 +831,13 @@ const visibleEventClass = (event: TraceEventItem) => {
         <>
           <GridBackground className=" workspace-grid-background" />
           <WorkflowHeader
-            title={`Record ${currentSession?.session_id || "New"} workflow`}
+            title={`${currentSession?.session_id || "Create New Project"}`}
             statusLabel={statusLabel}
             isRecording={isRecording}
             isCompleted={isCompleted}
             memoryConfirmed={memoryConfirmed}
             currentSessionStatus={currentSession?.status ?? undefined}
           />
-          <ProjectDelete session={currentSession} onDelete={handleDelete} />
           <AnimatedTabs activeId={activePanel} items={mainTabs} onChange={(panel) => openPanel(panel as Panel)} />
         </>
       }
@@ -931,6 +919,9 @@ const visibleEventClass = (event: TraceEventItem) => {
               traceLoading={traceLoading}
             />
           )}
+
+          <ProjectDelete session={currentSession} onDelete={handleDelete} />
+          
         </div>
       }
     >
@@ -941,6 +932,7 @@ const visibleEventClass = (event: TraceEventItem) => {
           </div>
         ))}
       </div>
+      
     </WorkflowLayout>
   );
 }

@@ -18,13 +18,14 @@ type AnimatedTabsProps = {
 
 export function AnimatedTabs({ activeId, items, onChange, className }: AnimatedTabsProps) {
   return (
-    <div className={cn("tabs animated-tabs", className)}>
+    <div>
+      <div className={`my-20 flex w-full ${cn("tabs animated-tabs", className)}`}>
       {items.map((item) => {
         const isActive = item.id === activeId;
 
         return (
           <button
-            className={isActive ? "active" : ""}
+            className={`grid h-[10vh] w-[100%] items-center ${isActive ? "active" : ""}`}
             disabled={item.disabled}
             key={item.id}
             onClick={() => onChange(item.id)}
@@ -37,11 +38,17 @@ export function AnimatedTabs({ activeId, items, onChange, className }: AnimatedT
                 transition={{ duration: 0.22, ease: "easeOut" }}
               />
             )}
-            {item.icon}
-            <span>{item.label}</span>
+            <div className="flex mx-auto h-[30%]">{item.icon}</div>
+            <span className="text-sm h-[50%] font-semibold uppercase">{item.label}</span>
+            <div className="h-[50%]"></div>
+            <motion.span
+                className={`${isActive ? 'border-solid' : 'border-dashed'} border-white/100 border-[1px]`}
+              />            
           </button>
+          
         );
       })}
+      </div>
     </div>
   );
 }

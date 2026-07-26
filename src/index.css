@@ -73,30 +73,18 @@ h1,
 h2 {
   font-family: var(--heading);
   font-weight: var(--font-weight-title);
-  color: var(--text-h);
 }
 
 h1 {
-  font-size: 4.5vw;
-  letter-spacing: var(--letter-spacing-title);
-  margin: 32px 0;
-  line-height: 1;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  color: var(--text-h);
 }
 h2 {
-  font-size: 24px;
   line-height: 118%;
   letter-spacing: var(--letter-spacing);
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
 }
 button, p {
-  font-size: min(3.5vw, 1rem);
+  cursor: pointer;
+  font-size: min(2.5vw, 1rem);
   font-family: var(--sans);
   margin: 0;
 }
@@ -116,6 +104,10 @@ code {
   background: var(--code-bg);
 }
 
+.red{
+  background-color: #bd373094;
+  color: rgb(255, 255, 255);
+}
 
 @keyframes liquid {
   0% {

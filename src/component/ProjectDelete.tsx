@@ -7,8 +7,8 @@ export default function ProjectDelete({ session, onDelete }: ProjectDeleteProps)
   if (!session) return null;
 
   return (
-    <button className="btn red" onClick={() => onDelete(session)}>
-      Delete
+    <button className="btn red rounded-full border border-red-500 py-1.5 px-8" onClick={() => onDelete(session)}>
+      Delete This Project
     </button>
   );
 }

@@ -37,9 +37,12 @@ export default function Home() {
         after:[animation-delay:-6s]
       "
     ></div>
-      <div className="h-[28vh]"></div>
+      <div className="h-[20vh]"></div>
       <h1 className="
-        uppercase py-[3vw]"
+        uppercase py-[min(10vh,50px)]
+        text-[4.5vw]
+        tracking-[30%]
+        "
         >
         Trailwise
       </h1>
