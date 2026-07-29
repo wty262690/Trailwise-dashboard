@@ -84,7 +84,7 @@ export default function Home() {
           "
           onClick={() => navigate("/workspace")}
         >
-        <span className="relative z-[1]">
+        <span className="relative z-[1] text-[length:var(--fontsize-button)]">
           Enter Workspace
         </span>
       </button>

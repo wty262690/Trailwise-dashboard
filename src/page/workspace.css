@@ -58,3 +58,86 @@
     transform: rotate(360deg)
   }
 }
+
+
+.phase-step::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+
+  background: var(--phase-border-gradient);
+
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+
+  -webkit-mask-composite: xor;
+
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+
+  mask-composite: exclude;
+}
+
+.phase-corner-tl {
+  --phase-border-gradient:
+    radial-gradient(
+      circle at top left,
+      rgba(226, 232, 240, 1) 0%,
+      rgba(226, 232, 240, 0.0) 28%,
+      rgba(226, 232, 240, 0.25) 52%,
+      transparent 76%
+    );
+}
+
+.phase-corner-tr {
+  --phase-border-gradient:
+    radial-gradient(
+      circle at top right,
+      rgba(226, 232, 240, 0.95) 0%,
+      rgba(226, 232, 240, 0.0) 28%,
+      rgba(226, 232, 240, 0.25) 52%,
+      transparent 76%
+    );
+}
+
+.phase-corner-bl {
+  --phase-border-gradient:
+    radial-gradient(
+      circle at bottom left,
+      rgba(226, 232, 240, 0.95) 0%,
+      rgba(226, 232, 240, 0.0) 28%,
+      rgba(226, 232, 240, 0.25) 52%,
+      transparent 76%
+    );
+}
+
+.phase-corner-br {
+  --phase-border-gradient:
+    radial-gradient(
+      circle at bottom right,
+      rgba(226, 232, 240, 0.95) 0%,
+      rgba(226, 232, 240, 0.0) 28%,
+      rgba(226, 232, 240, 0.25) 52%,
+      transparent 76%
+    );
+}
+
+@media (min-width:768px){
+  .phase-middle{
+    --phase-border-gradient:
+      linear-gradient(
+        to top right,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0.1) 60%,
+        rgba(255,255,255,0.5) 70%,
+        rgba(255,255,255,0) 90%,
+        transparent 60%
+      );
+  }
+}

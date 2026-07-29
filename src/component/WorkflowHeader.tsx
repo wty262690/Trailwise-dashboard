@@ -21,9 +21,9 @@ export default function WorkflowHeader(props: WorkflowHeaderProps) {
       <div className="relative z-10 mb-6 flexgap-3 p-2">
         <div className="w-fullflex flex-wrap items-center gap-2">
           <h2 className="w-[80%] text-[min(5vw,17px)] text-left leading-10 letter-spacing-[1vw] uppercase text-white/20">{title=='Create New Projec' ? 'add project' : 'workflow'}</h2>
-          <h1 className="w-[80%] text-[min(6vw,30px)] text-left leading-10 letter-spacing-[1vw] uppercase my-2">{title}</h1>
+          <h1 className="w-[80%] text-[min(4vw,30px)] text-left leading-10 letter-spacing-[1vw] uppercase my-1">{title}</h1>
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`inline-flex text-left min-h-6 rounded-full px-2.5 py-1 font-semibold border text-[min(11px,2vw)] ${
+            <span className={`inline-flex text-left min-h-6 rounded-full px-2.5 py-0.3 font-semibold border text-[min(11px,2vw)] ${
               isCompleted
                 ? "text-white border-emerald-200 bg-emerald-400"
                 : "text-white border-amber-400 bg-[rgba(250,190,0,0.3)]"
@@ -35,7 +35,7 @@ export default function WorkflowHeader(props: WorkflowHeaderProps) {
                 ? "complete recording"
                 : currentSessionStatus? currentSessionStatus : "not recorded record data yet"}
           </span>
-          <span className={`inline-flex text-left min-h-6 rounded-full px-2.5 py-1 font-semibold border text-[min(11px,2vw)] ${
+          <span className={`inline-flex text-left min-h-6 rounded-full px-2.5 py-0.3 font-semibold border text-[min(11px,2vw)] ${
                 isCompleted
                 ? "text-white border-emerald-200 bg-emerald-400"
                 : "text-white border-amber-400 bg-[rgba(250,190,0,0.3)]"

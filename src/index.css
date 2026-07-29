@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --text: rgba(105,255,151,0.9);
+  --text: rgba(255, 255, 255, 0.9);
   --text-h: rgb(191, 255, 236);
+  --text-dark: rgb(97, 161, 141);
   --bg: #16171d;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
@@ -21,6 +22,10 @@
   --letter-spacing-content: 0.1em;
   --letter-spacing-title: 0.15em;
 
+  --fontsize-title: min(2.5vw,15px);
+  --fontsize-p: min(2vw,10px);
+  --fontsize-button: min(2.5vw, 1rem);
+
   font: 18px/145% var(--sans);
   font-weight: var(--font-weight-content);
   letter-spacing: var(--letter-spacing-content);
@@ -38,7 +43,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: rgba(105,255,151,0.9);
+    --text: rgba(250, 251, 250, 0.9);
     --text-h: rgb(191, 255, 236);
     --bg: #16171d;
     --border: #2e303a;
@@ -84,7 +89,6 @@ h2 {
 }
 button, p {
   cursor: pointer;
-  font-size: min(2.5vw, 1rem);
   font-family: var(--sans);
   margin: 0;
 }

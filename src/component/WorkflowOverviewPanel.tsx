@@ -2,6 +2,7 @@ import { Activity, BookOpen, Bot, CircleDot, FileCode, Play, Route, Square } fro
 import { type RefObject } from "react";
 import { MovingBorderButton } from "./ui/MovingBorderButton";
 import type { LoadingAction, Panel, ProjectSession, WorkflowStage } from "./types";
+import { cn } from "../lib/utils";
 
 const icon18 = { size: 18, strokeWidth: 1.75 };
 
@@ -70,13 +71,39 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
   } = props;
 
   return (
-    <article className={`summary-card relative isolate min-h-[328px] overflow-hidden rounded-[50px] p-8 shadow-[0_28px_84px_rgba(18,31,51,0.1)] ${isRecording ? "is-live" : ""}`} ref={panelRef}>
-      <div className="phase-strip grid gap-3 md:grid-cols-4" aria-label="Workflow progress">
+    <article className={`hide-scrollbar summary-card relative isolate h-[45vh] overflow-auto py-5 shadow-[0_28px_84px_rgba(18,31,51,0.1)] ${isRecording ? "is-live" : ""}`} ref={panelRef}>
+      <div
+        className="phase-strip grid grid-cols-2 gap-0.5 md:grid-cols-4"
+        aria-label="Workflow progress"
+      >
         {workflowSteps.map((step, index) => {
-          const stepState = index < workflowStageIndex ? "complete" : index === workflowStageIndex ? "active" : "future";
+          const stepState =
+            index < workflowStageIndex
+              ? "complete"
+              : index === workflowStageIndex
+                ? "active"
+                : "future";
+
           return (
             <button
-              className={`phase-step ${stepState} grid items-center gap-3 rounded-lg border border-slate-200/80 bg-white/50 p-3 text-left"`}
+              className={cn(
+                "phase-step relative isolate grid items-center overflow-hidden rounded-none bg-white/10 px-5 py-2 text-left",
+
+                index === 0 && "phase-corner-tl rounded-tl-[25px]",
+                index === 1 && "phase-corner-tr rounded-tr-[25px]",
+                index === 2 && "phase-corner-bl rounded-bl-[25px]",
+                index === 3 && "phase-corner-br rounded-br-[25px]",
+
+                index === 0 &&
+                  "phase-left md:rounded-l-[50px] md:rounded-r-none",
+
+                (index === 1 || index === 2) &&
+                  "phase-middle md:rounded-none",
+
+                index === workflowSteps.length - 1 &&
+                  "phase-right md:rounded-r-[50px] md:rounded-l-none",
+                stepState
+              )}
               disabled={stepState === "future"}
               key={step.id}
               onClick={() => {
@@ -87,36 +114,66 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
               }}
               type="button"
             >
-              <span>{index + 1}</span>
-              <strong>{step.label}</strong>
-              <em>{step.detail}</em>
+              <div className="flex items-center gap-3">
+                <span className="text-white text-[min(5vw,40px)] font-bold ">{index + 1}</span> 
+                <div className="grid">
+                  <strong className="leading-[20px] relative z-10 font-bold uppercase text-white">
+                    {step.label}
+                  </strong>
+
+                  <em className="relative z-10 text-[min(2vw,15px)] leading-[17px] text-white/50">
+                    {step.detail}
+                  </em>
+                </div>
+              </div>
             </button>
           );
         })}
       </div>
 
-      <div className="stage-header flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <span className="stage-eyebrow">{stageCopy[workflowStage].eyebrow}</span>
-          <h2>{stageCopy[workflowStage].title}</h2>
-          <p>{stageCopy[workflowStage].body}</p>
-        </div>
-        <span className={`stage-status ${isRecording ? "red recording-pulse" : isCompleted ? "green" : ""}`}>
-          <CircleDot {...icon18} aria-hidden="true" />
-          {stageCopy[workflowStage].status}
-        </span>
-      </div>
 
       <div className="guided-stage-grid mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,352px)]">
         <div className="guided-stage-primary grid gap-4">
           {workflowStage === "prepare" && (
-            <div className="target-capture-panel rounded-2xl border border-sky-200/70 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
-              <label className="guided-url-field grid gap-2">
-                <span>Target URL</span>
-                <input aria-label="Target URL" value={targetUrl} onChange={(event) => props.onTargetUrlChange(event.target.value)} placeholder="http://localhost:5173" />
+            <div className="target-capture-panel rounded-tl-[30px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.6)_0%,transparent_76%)] p-4">
+              <label className="rounded-l-[10px] bg-[radial-gradient(circle_at_left,var(--text-h)_0%,transparent_100%)] flex guided-url-field">
+                <span className="text-[length:var(--fontsize-title)] text-[var(--text-dark)] p-2 leading-4 font-bold text-left uppercase">Target</span>
+                <input className="w-full text-[var(--text-dark)] px-5" aria-label="Target URL" value={targetUrl} onChange={(event) => props.onTargetUrlChange(event.target.value)} placeholder="http://localhost:5173" />
+                <MovingBorderButton
+                  className="
+                    inline-flex
+                    w-fit
+                    items-center
+                    justify-center
+                    gap-2
+                    whitespace-nowrap
+                    rounded-[50px]
+                    bg-white/10
+                    px-4
+                    py-2
+                    text-[length:var(--fontsize-title)]
+                    font-bold
+                    text-white
+                    shadow-lg
+                  "
+                  onClick={onStartRecording}
+                >
+                  Start
+                  <Play {...icon18} aria-hidden="true" />
+                </MovingBorderButton>
               </label>
+             <div className="stage-header flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="text-left text-[var(--text-h)]">
+                  <span className="text-[length:var(--fontsize-title)] stage-eyebrow font-bold">{stageCopy[workflowStage].eyebrow}</span>
+                  <h2 className="text-[length:var(--fontsize-title)]">{stageCopy[workflowStage].title}</h2>
+                  <p className="text-[length:var(--fontsize-p)] ">{stageCopy[workflowStage].body}</p>
+                </div>
+                <span className={`text-[length:var(--fontsize-p)] stage-status ${isRecording ? "red recording-pulse" : isCompleted ? "green" : ""}`}>
+                  <CircleDot {...icon18} aria-hidden="true" />
+                  {stageCopy[workflowStage].status}
+                </span>
+              </div>
               <div className="helper-inline mt-3">
-                <CircleDot {...icon18} aria-hidden="true" />
                 <div>
                   <strong>Local helper ready</strong>
                   <span>Chrome recording will start after local confirmation.</span>
