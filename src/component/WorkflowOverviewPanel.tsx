@@ -5,6 +5,7 @@ import type { LoadingAction, Panel, ProjectSession, WorkflowStage } from "./type
 import { cn } from "../lib/utils";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Info, X } from "lucide-react";
 
 const icon18 = { size: 18, strokeWidth: 1.75 };
 
@@ -74,7 +75,7 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
   const [showPreviewInfo, setShowPreviewInfo] = useState(false);
 
   return (
-    <article className={`hide-scrollbar summary-card relative isolate h-[45vh] overflow-visible py-5 shadow-[0_28px_84px_rgba(18,31,51,0.1)] ${isRecording ? "is-live" : ""}`} ref={panelRef}>
+    <article className={`hide-scrollbar overflow-y-scroll summary-card relative isolate h-[50vh] overflow-visible py-5 shadow-[0_28px_84px_rgba(18,31,51,0.1)] ${isRecording ? "is-live" : ""}`} ref={panelRef}>
       <div
         className="phase-strip grid grid-cols-2 gap-0.5 md:grid-cols-4"
         aria-label="Workflow progress"
@@ -90,7 +91,7 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           return (
             <button
               className={cn(
-                "phase-step relative isolate grid items-center overflow-hidden rounded-none bg-white/10 px-5 py-2 text-left",
+                "phase-step gradient-border relative isolate grid items-center overflow-hidden rounded-none bg-white/10 px-5 py-2 text-left",
 
                 index === 0 && "phase-corner-tl rounded-tl-[25px]",
                 index === 1 && "phase-corner-tr rounded-tr-[25px]",
@@ -135,7 +136,7 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
       </div>
 
 
-      <div className="guided-stage-grid mt-4 grid gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,352px)]">
+      <div className="guided-stage-grid mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,352px)]">
         <div className="guided-stage-primary grid gap-4 overflow-visible">
           <AnimatePresence>
           {showPreviewInfo && (
@@ -175,42 +176,44 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           )}</AnimatePresence>
 
           {workflowStage === "prepare" && (
-            <div className="target-capture-panel rounded-t-[30px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.6)_0%,transparent_76%)] p-4">
+            <div className="target-capture-panel rounded-t-[30px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.6)_0%,transparent_76%)] p-4 py-9">
                 
-                <div className="flex justify-between">
-                  <div className="flex text-left items-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowPreviewInfo((prev) => !prev)}
-                      className="
-                        z-[1] h-6 w-6 p-2
-                        inline-flex
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-white/10
-                        border
-                        border-0.5
-                        border-white/20
-                        text-sm
-                        font-medium
-                        text-black
-                        transition
-                        hover:bg-white/50
-                      "
-                    >
-                      {showPreviewInfo ? "x" : "i"}
-                    </button>
-                    <span className="leading-[var(--leading-title)] w-[50vw] text-left px-2 text-[length:var(--fontsize-title)] stage-eyebrow font-bold uppercase">{stageCopy[workflowStage].title}</span>
+                <div className="w-[100%] flex justify-between">
+                  <div className="flex text-left items-top">
+                  <button
+                    type="button"
+                    onClick={() => setShowPreviewInfo((prev) => !prev)}
+                    className="
+                      z-[1]
+                      inline-flex
+                      aspect-square
+                      h-[var(--fontsize-lx)]
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-full
+                      p-0
+                      text-[rgb(150,150,150)]
+                      transition
+                      hover:bg-white/50
+                    "
+                  >
+                    {showPreviewInfo ? (
+                      <X className="block" size={18} strokeWidth={2} />
+                    ) : (
+                      <Info className="block" size={18} strokeWidth={2} />
+                    )}
+                  </button>
+                 <div>
+                    <span className="leading-[var(--leading-title)] w-[100%] text-left px-2 text-[length:var(--fontsize-title)] stage-eyebrow font-bold uppercase">{stageCopy[workflowStage].title}</span>
+                    <p className="text-left leading-[var(--leading-p)] w-[80%] p-2 text-[length:var(--fontsize-p)]">{stageCopy[workflowStage].body}</p>
                   </div>
-                  <span className={`flex items-center text-[var(--text-h)] leading-[min(2vw,15px)] text-[length:var(--fontsize-status)] bg-[var(--text-h)]/20 border rounded-full stage-status px-3 py-1 ${isRecording ? "red recording-pulse" : isCompleted ? "green" : ""}`}>
+                  </div>
+                  <span className={`h-full flex items-center text-[var(--text-h)] leading-[min(2vw,15px)] text-[length:var(--fontsize-status)] bg-[var(--text-h)]/20 border rounded-full stage-status px-3 py-1 ${isRecording ? "red recording-pulse" : isCompleted ? "green" : ""}`}>
                     <CircleDot {...icon18} className="px-1" aria-hidden="true" />
                     <div className="text-left">{stageCopy[workflowStage].status}</div>
                   </span>
                 </div>
-
-                <p className="text-left leading-[var(--leading-p)] p-2 text-[length:var(--fontsize-p)]">{stageCopy[workflowStage].body}</p>
-
               <label className="items-center rounded-l-[10px] bg-[radial-gradient(circle_at_left,var(--text-h)_0%,transparent_100%)] flex guided-url-field">
                 <span className="text-[length:var(--fontsize-title)] text-[var(--text-dark)] p-2 m-auto leading-4 font-bold text-left uppercase">Target</span>
                 <input className="w-full text-[var(--text-dark)] px-5" aria-label="Target URL" value={targetUrl} onChange={(event) => props.onTargetUrlChange(event.target.value)} placeholder="http://localhost:5173" />
@@ -255,26 +258,26 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
                 <div className="grid text-left" >
                   <div>
                     <button
-                        type="button"
-                        onClick={() => setShowPreviewInfo((prev) => !prev)}
-                        className="
-                          z-[1] h-6 w-6 p-2
-                          inline-flex
-                          items-center
-                          justify-center
-                          rounded-full
-                          bg-white/10
-                          border
-                          border-0.5
-                          border-white/20
-                          text-sm
-                          font-medium
-                          text-black
-                          transition
-                          hover:bg-white/50
-                        "
-                      >
-                        {showPreviewInfo ? "x" : "i"}
+                      type="button"
+                      onClick={() => setShowPreviewInfo((prev) => !prev)}
+                      className="
+                        z-[1] h-5 w-5
+                        inline-flex
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-white/10
+                        border
+                        border-0.5
+                        border-white/20
+                        text-[length:var(--fontsize-p)]
+                        font-medium
+                        text-[rgb(150,150,150)]
+                        transition
+                        hover:bg-white/50
+                      "
+                    >
+                      {showPreviewInfo ? "x" : "i"}
                       </button>
                     <strong className="leading-[var(--leading-title)] w-[60%] text-left px-2 text-[length:var(--fontsize-title)] stage-eyebrow font-bold uppercase">Recording browser workflow</strong>
                   </div>
@@ -287,16 +290,27 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           <div className="metrics grid gap-0.5 text-left md:grid-cols-2 xl:grid-cols-4">
 
           <div
-            className="
-              grid grid-cols-[140px_1fr]
-              items-center
-              bg-white/20
-              rounded-t-[25px]
-              md:rounded-t-none
-              md:rounded-tl-[25px]
-              xl:rounded-l-[25px]
-            "
-          >
+                className="
+                  phase-step 
+                  phase-corner-tl 
+                  phase-left
+                  sm: phase-corner-br  
+                  gradient-border
+                  relative
+                  isolate
+                  grid
+                  grid-cols-[140px_1fr]
+                  items-center
+                  bg-white/10
+
+                  rounded-t-[25px]
+                  md:rounded-t-none
+                  md:rounded-tl-[25px]
+                  xl:rounded-l-[25px]
+
+                  py-2
+                "
+              >
             <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
               Status
             </span>
@@ -313,11 +327,15 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           {/* Duration */}
           <div
             className="
+              phase-step gradient-border 
+              phase-corner-tr phase-middle    
+              relative isolate
               grid grid-cols-[140px_1fr]
               items-center
-              bg-white/20
+              bg-white/10
               md:rounded-tr-[25px]
               xl:rounded-none
+              py-2
             "
           >
             <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
@@ -332,11 +350,16 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           {/* Actions */}
           <div
             className="
+              phase-step gradient-border 
+              phase-corner-bl phase-middle sm: phase-corner-br  
+              relative isolate
+
               grid grid-cols-[140px_1fr]
               items-center
-              bg-white/20
+              bg-white/10
               md:rounded-bl-[25px]
               xl:rounded-none
+              py-2
             "
           >
             <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
@@ -351,13 +374,17 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           {/* Session */}
           <div
             className="
+              phase-step gradient-border 
+              phase-corner-br phase-right    
+              relative isolate
               grid grid-cols-[140px_1fr]
               items-center
-              bg-white/20
+              bg-white/10
               rounded-b-[25px]
               md:rounded-b-none
               md:rounded-br-[25px]
               xl:rounded-r-[25px]
+              py-2
             "
           >
             <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
@@ -370,15 +397,29 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           </div>
 
         </div>
-          <div className="text-[length:var(--fontsize-title)] items-center trust-strip mt-0 grid gap-0 overflow-hidden rounded-full bg-white/20 md:grid-cols-3">
-            <span>{isCompleted ? "Keyframes extracted" : "Target URL ready"}</span>
-            <span>{isCompleted ? "Stage results" : "Local helper ready"}</span>
-            <span>{memoryConfirmed ? "Memory saved" : isCompleted ? "Review required" : "Ready to record"}</span>
+          <div className="text-[length:var(--fontsize-p)] items-center trust-strip my-2 grid gap-0.5 overflow-hidden rounded-full grid-cols-3 opacity-100">
+            <span className="rounded-l-full py-2 bg-white/10                   
+                  phase-step gradient-border 
+                  phase-left    
+                  relative isolate
+                  ">{isCompleted ? "Keyframes extracted" : "Target URL ready"}</span>
+            <span className="py-2 bg-white/10
+                  phase-step gradient-border 
+                  phase-middle    
+                  relative isolate
+                  ">{isCompleted ? "Stage results" : "Local helper ready"}</span>
+            <span className="rounded-r-full py-2 bg-white/10
+                  phase-step gradient-border 
+                  phase-right    
+                  relative isolate">{memoryConfirmed ? "Memory saved" : isCompleted ? "Review required" : "Ready to record"}</span>
           </div>
         </div>
 
         
-          <div className="stage-action-bar flex flex-wrap gap-3 rounded-[10px] border border-white/60 bg-white/10 p-2.5">
+          <div className="stage-action-bar flex flex-wrap gap-3 rounded-[30px]
+              phase-step gradient-border 
+              phase-corner-tl phase-right    
+              relative isolate p-3 py-6 text-left">
               {isCompleted ? (
                 <div className="learned-memory-panel rounded-2xl border border-sky-200/70 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
                   <div className="learned-head flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -400,23 +441,24 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
                   </ol>
                 </div>
               ) : (
-                <div className="memory-entry-card grid gap-0 overflow-hidden rounded-2xl border border-sky-200/70 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] grid-cols-2">
-                  <div>
-                    <span className="uppercase font-bold">Workflow memory</span>
-                    <strong>{memoryConfirmed ? "Target URL and local helper ready" : "Waiting for recording"}</strong>
+                <div className="memory-entry-card w-full grid gap-0.5 overflow-hidden rounded-2xl grid-cols-2">
+                  <div className="grid bg-white/10 p-3">
+                    <span className="text-[length:var(--fontsize-title)] uppercase font-bold">Workflow memory</span>
+                    <strong className="text-[length:var(--fontsize-p)]">{memoryConfirmed ? "Target URL and local helper ready" : "Waiting for recording"}</strong>
                   </div>
-                  <div>
-                    <span className="uppercase font-bold">Initial state</span>
-                    <strong>{currentSession ? "Target URL and local helper ready" : "Waiting for session"}</strong>
+                  <div className="grid bg-white/10 p-3">
+                    <span className="text-[length:var(--fontsize-title)] uppercase font-bold">Initial state</span>
+                    <strong className="text-[length:var(--fontsize-p)]">{currentSession ? "Target URL and local helper ready" : "Waiting for session"}</strong>
                   </div>
                 </div>
               )}
+          <div className="items-center grid w-full grid-cols-2 gap-2 lg:grid-cols-1">
             {workflowStage === "prepare" && (
               <>
-                <MovingBorderButton className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white shadow-lg shadow-slate-900/10" onClick={onStartRecording}>
+                <MovingBorderButton className="inline-flex h-10 items-center justify-center gap-3 rounded-full border border-slate-900 bg-slate-900 px-4 text-[length:var(--fontsize-title))] font-bold text-white shadow-lg shadow-slate-900/10" onClick={onStartRecording}>
                   Start recording <Play {...icon18} aria-hidden="true" />
                 </MovingBorderButton>
-                <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700" onClick={onCheckStatus}>
+                <button className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-[length:var(--fontsize-title))] font-bold text-slate-700" onClick={onCheckStatus}>
                   Check helper <Activity {...icon18} aria-hidden="true" />
                 </button>
               </>
@@ -469,6 +511,7 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
                 </button>
               </>
             )}
+            </div>
           </div>
         </div>
 

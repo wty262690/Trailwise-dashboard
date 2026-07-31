@@ -24,14 +24,14 @@
   --letter-spacing-title: 0.15em;
 
   --fontsize-lx: min(3.7vw,17px);
-  --fontsize-title: min(2.5vw,15px);
+  --fontsize-title: min(3.7vw,18px);
   --fontsize-subtitle: min(2vw,15px);
   --fontsize-p: min(2.2vw,13px);
   --fontsize-status: min(11px,2vw);
   --fontsize-button: min(2.5vw, 1rem);
 
   --leading-lx: min(3.7vw,17px);
-  --leading-title: min(3vw,20px);
+  --leading-title: min(3.8vw,20px);
   --leading-subtitle: min(2.7vw,20px);
   --leading-p: min(2.5vw,15px);
   --leading-button: min(2.5vw, 1rem);

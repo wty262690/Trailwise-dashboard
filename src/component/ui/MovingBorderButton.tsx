@@ -7,9 +7,9 @@ type MovingBorderButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function MovingBorderButton({ children, className, disabled, ...props }: MovingBorderButtonProps) {
   return (
-    <button className={cn("moving-border-button", className)} disabled={disabled} {...props}>
+    <button className={`${cn("moving-border-button", className)}`} disabled={disabled} {...props}>
       {!disabled && <span className="moving-border-button__glow" aria-hidden="true" />}
-      <span className="items-center flex justify-center moving-border-button__content">{children}</span>
+      <span className="flex gap-2 items-center flex justify-center moving-border-button__content">{children}</span>
     </button>
   );
 }

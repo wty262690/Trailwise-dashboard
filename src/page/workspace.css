@@ -59,7 +59,7 @@
   }
 }
 
-
+/*
 .phase-step::before {
   content: "";
   position: absolute;
@@ -83,6 +83,7 @@
 
   mask-composite: exclude;
 }
+*/
 
 .phase-corner-tl {
   --phase-border-gradient:
@@ -138,6 +139,74 @@
         rgba(255,255,255,0.5) 70%,
         rgba(255,255,255,0) 90%,
         transparent 60%
+      );
+  }
+}
+
+.gradient-border {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+
+  background: var(--phase-border-gradient);
+
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+
+  -webkit-mask-composite: xor;
+
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+
+  mask-composite: exclude;
+}
+
+@media (min-width: 1280px) {
+  .phase-left {
+    --phase-border-gradient:
+      radial-gradient(
+        circle at top left,
+        rgba(226, 232, 240, 1) 0%,
+        rgba(226, 232, 240, 0.45) 25%,
+        rgba(226, 232, 240, 0.12) 50%,
+        transparent 75%
+      ),
+      radial-gradient(
+        circle at bottom left,
+        rgba(226, 232, 240, 1) 0%,
+        rgba(226, 232, 240, 0.45) 25%,
+        rgba(226, 232, 240, 0.12) 50%,
+        transparent 75%
+      );
+  }
+
+  .phase-right {
+    --phase-border-gradient:
+      radial-gradient(
+        circle at top right,
+        rgba(226, 232, 240, 1) 0%,
+        rgba(226, 232, 240, 0.45) 25%,
+        rgba(226, 232, 240, 0.12) 50%,
+        transparent 75%
+      ),
+      radial-gradient(
+        circle at bottom right,
+        rgba(226, 232, 240, 1) 0%,
+        rgba(226, 232, 240, 0.45) 25%,
+        rgba(226, 232, 240, 0.12) 50%,
+        transparent 75%
       );
   }
 }
