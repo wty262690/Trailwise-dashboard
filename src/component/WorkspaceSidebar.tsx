@@ -16,7 +16,7 @@ export default function WorkspaceSidebar({
   return (
     <aside className="absolute inset-0 z-0 h-screen w-screen overflow-y-auto bg-slate-950/95 p-8 text-slate-100 shadow-2xl md:h-full md:border-r md:border-slate-800/60 md:bg-slate-950/90">
       {/*<div className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-200">ACME WORKSPACE</div>*/}
-      <div className="mt-2 text-[12px] text-slate-400">4 projects / local helper on</div>
+      {/*<div className="mt-2 text-[12px] text-slate-400">4 projects / local helper on</div>*/}
 
       <ProjectsBar
         sessions={sessions}

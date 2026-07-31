@@ -3,6 +3,8 @@ import { type RefObject } from "react";
 import { MovingBorderButton } from "./ui/MovingBorderButton";
 import type { LoadingAction, Panel, ProjectSession, WorkflowStage } from "./types";
 import { cn } from "../lib/utils";
+import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 const icon18 = { size: 18, strokeWidth: 1.75 };
 
@@ -69,6 +71,7 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
     onGenerateArtifact,
     onOpenPanel,
   } = props;
+  const [showPreviewInfo, setShowPreviewInfo] = useState(false);
 
   return (
     <article className={`hide-scrollbar summary-card relative isolate h-[45vh] overflow-auto py-5 shadow-[0_28px_84px_rgba(18,31,51,0.1)] ${isRecording ? "is-live" : ""}`} ref={panelRef}>
@@ -121,7 +124,7 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
                     {step.label}
                   </strong>
 
-                  <em className="relative z-10 text-[min(2vw,15px)] leading-[17px] text-white/50">
+                  <em className="relative z-10 text-[length:var(--fontsize-subtitle)] leading-[var(--leading-subtitle)] text-white/50">
                     {step.detail}
                   </em>
                 </div>
@@ -132,16 +135,87 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
       </div>
 
 
-      <div className="guided-stage-grid mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,352px)]">
+      <div className="guided-stage-grid mt-4 grid gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(320px,26vw,352px)]">
         <div className="guided-stage-primary grid gap-4">
+          <AnimatePresence>
+          {showPreviewInfo && (
+            <motion.aside
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.25 }}
+              className="
+                z-[0]
+                w-full
+                absolute
+                workflow-preview-panel
+                rounded-2xl
+                border
+                border-slate-200/70
+                text-slate-100
+                shadow-[0_18px_42px_rgba(6,18,43,0.12)]
+              "
+            >
+            <aside className="lg:relative workflow-preview-panel rounded-2xl border border-slate-200/70 bg-white/85 p-6 text-black font-bold shadow-[0_18px_42px_rgba(6,18,43,0.12)]">
+              <span className="text-[length:var(--fontsize-title)]">{workflowStage === "generate" ? "READY TO REUSE" : "WHAT TRAILWISE CAPTURES"}</span>
+              <h3 className="text-[length:var(--fontsize-title)]" >
+                {workflowStage === "generate"
+                  ? "This memory can now guide people or a robot run."
+                  : workflowStage === "review"
+                    ? "Confirm the summary instead of reading every event."
+                    : "Record once, then reuse the workflow later."}
+              </h3>
+              <ul className="text-[length:var(--fontsize-title)] text-left">
+                <li>''{workflowStage === "generate" ? "Run the automation robot" : "Browser actions and timing"}</li>
+                <li>''{workflowStage === "generate" ? "Generate Runbook or Test Case" : "Key screen states and stage results"}</li>
+                <li>''{workflowStage === "generate" ? "Pause for human handoff when needed" : "Sensitive input redaction"}</li>
+              </ul>
+            </aside>
+            </motion.aside>
+          )}</AnimatePresence>
+
           {workflowStage === "prepare" && (
-            <div className="target-capture-panel rounded-tl-[30px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.6)_0%,transparent_76%)] p-4">
-              <label className="rounded-l-[10px] bg-[radial-gradient(circle_at_left,var(--text-h)_0%,transparent_100%)] flex guided-url-field">
-                <span className="text-[length:var(--fontsize-title)] text-[var(--text-dark)] p-2 leading-4 font-bold text-left uppercase">Target</span>
+            <div className="target-capture-panel rounded-t-[30px] bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.6)_0%,transparent_76%)] p-4">
+                
+                <div className="flex justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setShowPreviewInfo((prev) => !prev)}
+                      className="
+                        z-[1] h-6 w-6 p-2
+                        inline-flex
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-white/10
+                        border
+                        border-0.5
+                        border-white/20
+                        text-sm
+                        font-medium
+                        text-black
+                        transition
+                        hover:bg-white/50
+                      "
+                    >
+                      {showPreviewInfo ? "x" : "i"}
+                    </button>
+
+                  <span className="leading-[var(--leading-title)] w-[60%] text-left px-2 text-[length:var(--fontsize-title)] stage-eyebrow font-bold uppercase">{stageCopy[workflowStage].title}</span>
+                  <span className={`flex items-center text-[var(--text-h)] leading-[min(2vw,15px)] text-[length:var(--fontsize-status)] bg-[var(--text-h)]/20 border rounded-full stage-status px-3 py-1 ${isRecording ? "red recording-pulse" : isCompleted ? "green" : ""}`}>
+                    <CircleDot {...icon18} className="px-1" aria-hidden="true" />
+                    <div className="text-left">{stageCopy[workflowStage].status}</div>
+                  </span>
+                </div>
+
+                <p className="text-left leading-[var(--leading-p)] p-2 text-[length:var(--fontsize-p)]">{stageCopy[workflowStage].body}</p>
+
+              <label className="items-center rounded-l-[10px] bg-[radial-gradient(circle_at_left,var(--text-h)_0%,transparent_100%)] flex guided-url-field">
+                <span className="text-[length:var(--fontsize-title)] text-[var(--text-dark)] p-2 m-auto leading-4 font-bold text-left uppercase">Target</span>
                 <input className="w-full text-[var(--text-dark)] px-5" aria-label="Target URL" value={targetUrl} onChange={(event) => props.onTargetUrlChange(event.target.value)} placeholder="http://localhost:5173" />
                 <MovingBorderButton
                   className="
-                    inline-flex
+                    flex
                     w-fit
                     items-center
                     justify-center
@@ -163,20 +237,12 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
                 </MovingBorderButton>
               </label>
              <div className="stage-header flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="text-left text-[var(--text-h)]">
-                  <span className="text-[length:var(--fontsize-title)] stage-eyebrow font-bold">{stageCopy[workflowStage].eyebrow}</span>
-                  <h2 className="text-[length:var(--fontsize-title)]">{stageCopy[workflowStage].title}</h2>
-                  <p className="text-[length:var(--fontsize-p)] ">{stageCopy[workflowStage].body}</p>
-                </div>
-                <span className={`text-[length:var(--fontsize-p)] stage-status ${isRecording ? "red recording-pulse" : isCompleted ? "green" : ""}`}>
-                  <CircleDot {...icon18} aria-hidden="true" />
-                  {stageCopy[workflowStage].status}
-                </span>
-              </div>
-              <div className="helper-inline mt-3">
-                <div>
-                  <strong>Local helper ready</strong>
-                  <span>Chrome recording will start after local confirmation.</span>
+                <div className="text-left">
+                  <div className="helper-inline mt-2">
+                    <div className="text-[var(--text-light)] text-[length:var(--fontsize-p)]">
+                      <span>Chrome recording will start after local confirmation.</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -185,7 +251,6 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
           {workflowStage === "record" && (
             <div className="target-capture-panel live-capture-panel rounded-2xl border border-rose-200/70 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
               <div className="live-indicator">
-                <CircleDot className="recording-pulse" {...icon18} aria-hidden="true" />
                 <div>
                   <strong>Recording browser workflow</strong>
                   <span>Demonstrate the full path once, then stop to structure memory.</span>
@@ -194,24 +259,92 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
             </div>
           )}
 
-          <div className="metrics grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div>
-              <span>Status</span>
-              <strong className={isRecording ? "red-text" : isCompleted ? "green-text" : ""}>{statusLabel}</strong>
-            </div>
-            <div>
-              <span>Duration</span>
-              <strong>{formatDuration(durationSeconds)}</strong>
-            </div>
-            <div>
-              <span>Actions captured</span>
-              <strong>{actionsCaptured}</strong>
-            </div>
-            <div>
-              <span>Session</span>
-              <strong>Active</strong>
-            </div>
+          <div className="metrics grid gap-0.5 text-left md:grid-cols-2 xl:grid-cols-4">
+
+          <div
+            className="
+              grid grid-cols-[140px_1fr]
+              items-center
+              bg-white/20
+              rounded-t-[25px]
+              md:rounded-t-none
+              md:rounded-tl-[25px]
+              xl:rounded-l-[25px]
+            "
+          >
+            <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
+              Status
+            </span>
+
+            <strong
+              className={`px-4 break-all text-[length:var(--fontsize-p)] leading-[var(--leading-p)] ${
+                isRecording ? "red-text" : isCompleted ? "green-text" : ""
+              }`}
+            >
+              {statusLabel}
+            </strong>
           </div>
+
+          {/* Duration */}
+          <div
+            className="
+              grid grid-cols-[140px_1fr]
+              items-center
+              bg-white/20
+              md:rounded-tr-[25px]
+              xl:rounded-none
+            "
+          >
+            <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
+              Duration
+            </span>
+
+            <strong className="px-4 text-[length:var(--fontsize-p)]">
+              {formatDuration(durationSeconds)}
+            </strong>
+          </div>
+
+          {/* Actions */}
+          <div
+            className="
+              grid grid-cols-[140px_1fr]
+              items-center
+              bg-white/20
+              md:rounded-bl-[25px]
+              xl:rounded-none
+            "
+          >
+            <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
+              Actions
+            </span>
+
+            <strong className="px-4 text-[length:var(--fontsize-p)]">
+              {actionsCaptured}
+            </strong>
+          </div>
+
+          {/* Session */}
+          <div
+            className="
+              grid grid-cols-[140px_1fr]
+              items-center
+              bg-white/20
+              rounded-b-[25px]
+              md:rounded-b-none
+              md:rounded-br-[25px]
+              xl:rounded-r-[25px]
+            "
+          >
+            <span className="px-4 text-right uppercase font-bold text-[length:var(--fontsize-title)]">
+              Session
+            </span>
+
+            <strong className="px-4 text-[length:var(--fontsize-p)]">
+              Active
+            </strong>
+          </div>
+
+        </div>
 
           {isCompleted ? (
             <div className="learned-memory-panel rounded-2xl border border-sky-200/70 bg-white/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.74)]">
@@ -231,38 +364,35 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
                   <strong>Operating path</strong>
                   <span>Create an approval request, fill required fields, and submit.</span>
                 </li>
-                <li>
-                  <strong>Expected result</strong>
-                  <span>Success confirmation appears and the result state is captured.</span>
-                </li>
               </ol>
             </div>
           ) : (
-            <div className="memory-entry-card grid gap-0 overflow-hidden rounded-2xl border border-sky-200/70 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] md:grid-cols-3">
+            <div className="memory-entry-card grid gap-0 overflow-hidden rounded-2xl border border-sky-200/70 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] grid-cols-3">
               <div>
-                <span>Workflow memory</span>
+                <span className="uppercase font-bold">Workflow memory</span>
                 <strong>{memoryConfirmed ? "Target URL and local helper ready" : "Waiting for recording"}</strong>
               </div>
               <div>
-                <span>Initial state</span>
+                <span className="uppercase font-bold">Initial state</span>
                 <strong>{currentSession ? "Target URL and local helper ready" : "Waiting for session"}</strong>
               </div>
-              <div>
-                <span>Stage result</span>
-                <strong>Record one successful workflow path</strong>
-              </div>
+                <div className="trust-strip mt-5 grid gap-0 overflow-hidden rounded-lg border border-sky-200/60 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] md:grid-cols-3">
+                  <span>{isCompleted ? "Keyframes extracted" : "Target URL ready"}</span>
+                  <span>{isCompleted ? "Stage results" : "Local helper ready"}</span>
+                  <span>{memoryConfirmed ? "Memory saved" : isCompleted ? "Review required" : "Ready to record"}</span>
+                </div>
             </div>
           )}
 
-          <div className="stage-action-bar flex flex-wrap gap-3 rounded-[10px] border border-white/60 bg-white/70 p-2.5">
+          <div className="stage-action-bar flex flex-wrap gap-3 rounded-[10px] border border-white/60 bg-white/10 p-2.5">
             {workflowStage === "prepare" && (
               <>
-                <MovingBorderButton className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white shadow-lg shadow-slate-900/10" onClick={onStartRecording}>
+                {/*<MovingBorderButton className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white shadow-lg shadow-slate-900/10" onClick={onStartRecording}>
                   Start recording <Play {...icon18} aria-hidden="true" />
                 </MovingBorderButton>
                 <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700" onClick={onCheckStatus}>
                   Check helper <Activity {...icon18} aria-hidden="true" />
-                </button>
+                </button>*/}
               </>
             )}
             {workflowStage === "record" && (
@@ -315,28 +445,6 @@ export default function WorkflowOverviewPanel(props: WorkflowOverviewPanelProps)
             )}
           </div>
         </div>
-
-        <aside className="workflow-preview-panel rounded-2xl border border-slate-200/70 bg-slate-900/95 p-6 text-slate-100 shadow-[0_18px_42px_rgba(6,18,43,0.12)]">
-          <span>{workflowStage === "generate" ? "READY TO REUSE" : "WHAT TRAILWISE CAPTURES"}</span>
-          <h3>
-            {workflowStage === "generate"
-              ? "This memory can now guide people or a robot run."
-              : workflowStage === "review"
-                ? "Confirm the summary instead of reading every event."
-                : "Record once, then reuse the workflow later."}
-          </h3>
-          <ul>
-            <li>{workflowStage === "generate" ? "Run the automation robot" : "Browser actions and timing"}</li>
-            <li>{workflowStage === "generate" ? "Generate Runbook or Test Case" : "Key screen states and stage results"}</li>
-            <li>{workflowStage === "generate" ? "Pause for human handoff when needed" : "Sensitive input redaction"}</li>
-          </ul>
-        </aside>
-      </div>
-
-      <div className="trust-strip mt-5 grid gap-0 overflow-hidden rounded-lg border border-sky-200/60 bg-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] md:grid-cols-3">
-        <span>{isCompleted ? "Keyframes extracted" : "Target URL ready"}</span>
-        <span>{isCompleted ? "Stage results" : "Local helper ready"}</span>
-        <span>{memoryConfirmed ? "Memory saved" : isCompleted ? "Review required" : "Ready to record"}</span>
       </div>
     </article>
   );

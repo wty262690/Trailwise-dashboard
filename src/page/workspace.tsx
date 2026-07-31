@@ -157,7 +157,7 @@ const workflowStage: WorkflowStage =
     const stageCopy: Record<WorkflowStage, { eyebrow: string; title: string; body: string; status: string }> = {
       prepare: {
         eyebrow: "Step 1 / Record",
-        title: "Start a browser workflow recording.",
+        title: "Start a browser workflow recording",
         body: "Enter a target URL, then record one complete workflow so Trailwise can structure it into reusable memory.",
         status: "Ready to record",
       },
@@ -592,8 +592,9 @@ const loadRecordingDetails = async (
    const beginRecording = async () => {
     if (isRecording) return;
     try {
-          const result = await startRecording(targetUrl);
-    
+
+          const result = await startRecording(targetUrl, currentSession? currentSession.session_id:null);
+          
           console.log(result);
     
           setMessage(result.text ?? JSON.stringify(result));

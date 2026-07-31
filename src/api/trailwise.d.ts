@@ -1,4 +1,4 @@
-export declare function startRecording(url: string): Promise<any>;
+export declare function startRecording(url: string, sessionId: any): Promise<any>;
 export declare function stopRecording(sessionId?: string): Promise<any>;
 export declare function statusRecording(sessionId?: string): Promise<any>;
 export declare function waitForRecordingCompleted(sessionId?: string): Promise<any>;

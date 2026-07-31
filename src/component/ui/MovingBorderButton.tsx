@@ -9,7 +9,7 @@ export function MovingBorderButton({ children, className, disabled, ...props }: 
   return (
     <button className={cn("moving-border-button", className)} disabled={disabled} {...props}>
       {!disabled && <span className="moving-border-button__glow" aria-hidden="true" />}
-      <span className="moving-border-button__content">{children}</span>
+      <span className="items-center flex justify-center moving-border-button__content">{children}</span>
     </button>
   );
 }

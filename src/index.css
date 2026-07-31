@@ -3,6 +3,7 @@
 :root {
   --text: rgba(255, 255, 255, 0.9);
   --text-h: rgb(191, 255, 236);
+  --text-light: rgb(155, 153, 153);
   --text-dark: rgb(97, 161, 141);
   --bg: #16171d;
   --border: #e5e4e7;
@@ -22,9 +23,18 @@
   --letter-spacing-content: 0.1em;
   --letter-spacing-title: 0.15em;
 
+  --fontsize-lx: min(3.7vw,17px);
   --fontsize-title: min(2.5vw,15px);
-  --fontsize-p: min(2vw,10px);
+  --fontsize-subtitle: min(2vw,15px);
+  --fontsize-p: min(2.2vw,13px);
+  --fontsize-status: min(11px,2vw);
   --fontsize-button: min(2.5vw, 1rem);
+
+  --leading-lx: min(3.7vw,17px);
+  --leading-title: min(3vw,20px);
+  --leading-subtitle: min(2.7vw,20px);
+  --leading-p: min(2.5vw,15px);
+  --leading-button: min(2.5vw, 1rem);
 
   font: 18px/145% var(--sans);
   font-weight: var(--font-weight-content);
@@ -87,10 +97,9 @@ h2 {
   line-height: 118%;
   letter-spacing: var(--letter-spacing);
 }
-button, p {
+button, p, span {
   cursor: pointer;
   font-family: var(--sans);
-  margin: 0;
 }
 
 code,

@@ -12,11 +12,53 @@ export default function ProjectCard({
 
     return(
         <button
-            className={`project-row w-full rounded-xl border px-4 py-3 text-left transition ${selected ? "active border-sky-400/40 bg-sky-500/10" : "border-transparent bg-transparent hover:bg-white/5"}`}
-            onClick={onOpen}
+        className={`
+            flex
+            h-full
+            w-full
+            flex-col
+            items-center
+            justify-start
+            rounded-[30px]
+            border
+            px-4
+            py-6
+            transition
+            //bg-[linear-gradient(to_bottom,var(--text-h)_10%,transparent_60%)]
+            ${
+            selected
+                ? "active border-sky-400/100 bg-[linear-gradient(to_bottom,rgba(14,165,233,0.9)_10%,transparent_100%)]"
+                : "border-transparent bg-transparent bg-[linear-gradient(to_left_bottom,rgba(14,165,233,0.5)_0%,transparent_70%)]"
+            }
+        `}
+        onClick={onOpen}
         >
-            <strong className="block text-[12px] font-semibold text-slate-100">{session.session_id}</strong>
-            <span className="mt-1 block text-left text-[11px] text-slate-400">{session.status}</span>
+        <strong
+            className="
+                block
+                w-full
+                break-all
+                text-[length:var(--fontsize-lx)]
+                leading-[var(--leading-lx)]
+                font-bold
+                text-black
+            "
+            >
+            {session.session_id}
+            </strong>
+
+        <span 
+            className="
+                mt-1 
+                block 
+                text-[length:var(--fontsize-subtitle)] 
+                leading-[var(--leading-subtitle)]
+                text-black
+                line-clamp-2
+                break-all
+                ">
+            {session.status}
+        </span>
         </button>
     )
 
