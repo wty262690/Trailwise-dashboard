@@ -161,7 +161,7 @@ export default function ProjectsBar({
   return (
     <section className="w-full">
       <div className="relative h-[18vh] min-h-[140px] w-[85vw] overflow-visible">
-        <div className="flex h-[50vh] items-center justify-center overflow-hidden">
+        <div className="flex h-[50vh] items-center justify-center overflow-visible">
           <AnimatePresence
             mode="popLayout"
             initial={false}
